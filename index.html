@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Meta Tags -->
+  <title>Gurunarayan Sharma | Graphic Designer & Generative AI Artist</title>
+  <meta name="description" content="Portfolio of Gurunarayan Sharma showcasing branding, graphic design, AI-generated visuals, prompt engineering and creative campaigns.">
+  <meta name="author" content="Gurunarayan Sharma">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Styling -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-family=%22sans-serif%22 font-weight=%22bold%22 fill=%22%23111111%22>G</text></svg>">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loader" class="loader">
+    <div class="loader-logo">GURUNARAYAN SHARMA</div>
+    <div class="loader-bar">
+      <div class="loader-bar-progress"></div>
+    </div>
+  </div>
+
+  <!-- Custom Cursor -->
+  <div id="customCursor" class="custom-cursor"></div>
+
+  <!-- Page Transition Curtain -->
+  <div id="pageCurtain" class="page-curtain"></div>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="container">
+      <a href="#hero" class="logo" id="headerLogo">GS.</a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#about">About</a></li>
+        <li><a href="#expertise">Expertise</a></li>
+        <li><a href="#portfolio">Projects</a></li>
+        <li><a href="#videos">Motion</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="hero">
+    <div class="hero-geometry">
+      <div class="hero-circle"></div>
+      <div class="hero-dots"></div>
+    </div>
+    <div class="container">
+      <div class="hero-layout">
+        <!-- Left: Large typography -->
+        <div class="hero-header-block reveal-fade-up">
+          <span class="hero-role">Creative Portfolio</span>
+          <h1 class="hero-name">Gurunarayan<br><span class="hero-name-alt">Sharma</span></h1>
+        </div>
+        <!-- Right: Minimal abstract composition & Details -->
+        <div class="hero-body-block reveal-fade-up">
+          <div class="hero-visual-container">
+            <div class="abstract-geometry">
+              <div class="geo-circle geo-circle-1"></div>
+              <div class="geo-circle geo-circle-2"></div>
+              <div class="geo-circle geo-circle-3"></div>
+              <div class="geo-line-curved"></div>
+              <div class="geo-line-axis"></div>
+            </div>
+          </div>
+          <span class="hero-tagline">Graphic Designer &amp; Generative AI Creator</span>
+          <p class="hero-desc">
+            I create clean visuals, social media creatives, product concepts, and marketing designs using Adobe Creative Suite and Generative AI tools.
+          </p>
+          <div class="hero-actions">
+            <a href="#portfolio" class="btn btn-primary" id="heroCtaPrimary">View Work</a>
+            <a href="Resume/Gurunarayan_Sharma_Resume.pdf" class="btn btn-secondary" id="downloadResumeBtn" download="Gurunarayan_Sharma_Resume.pdf">Download Resume</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-indicator">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about">
+    <div class="container">
+        <div class="section-header reveal-fade-up">
+          <span class="section-label">01 / Profile</span>
+          <h2 class="section-title">A clean approach to design and creative technology.</h2>
+        </div>
+        
+        <div class="about-grid reveal-fade-up">
+          <div class="about-summary">
+            <p>
+              Hi, I'm Gurunarayan, a Graphic Designer and Generative AI Creator based in Mumbai.
+            </p>
+            <p>
+              I enjoy creating brand identities, product campaigns and social media creatives using both traditional design tools and modern AI workflows. I'm currently building my experience through freelance projects and personal work while continuously learning and improving my creative skills.
+            </p>
+          </div>
+        </div>
+
+        <div class="about-meta">
+          <div>
+            <h3 class="meta-block-title">Education</h3>
+            <div class="timeline-list">
+              <div class="timeline-item">
+                <div class="timeline-info">
+                  <h4>Bachelor of Science</h4>
+                  <p>Computer Science — Mumbai University</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="meta-block-title">Languages</h3>
+            <div class="lang-list">
+              <div class="lang-item">
+                <span class="lang-name">English</span>
+                <span class="lang-level">Professional</span>
+              </div>
+              <div class="lang-item">
+                <span class="lang-name">Hindi</span>
+                <span class="lang-level">Native</span>
+              </div>
+              <div class="lang-item">
+                <span class="lang-name">Marathi</span>
+                <span class="lang-level">Conversational</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <!-- Expertise Section -->
+  <section id="expertise">
+    <div class="container">
+      <div class="section-header reveal-fade-up">
+        <span class="section-label">02 / Expertise</span>
+        <h2 class="section-title">Skills and creative focus areas.</h2>
+      </div>
+
+      <div class="expertise-grid">
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">01.</span>
+          <h3>Graphic Design</h3>
+          <p>Layouts, typography, and marketing graphics that align with brand standards.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">02.</span>
+          <h3>Brand Identity</h3>
+          <p>Creating logos, color palettes, and packaging designs for new or existing brands.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">03.</span>
+          <h3>AI Image Creation</h3>
+          <p>Generating mockups, commercial ideas, and product art using text-to-image tools.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">04.</span>
+          <h3>AI Video Production</h3>
+          <p>Creating short commercial clips, video ads, and engaging social media loops.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">05.</span>
+          <h3>Prompt Tuning</h3>
+          <p>Writing precise text prompts to achieve consistent styles, characters, and layouts.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">06.</span>
+          <h3>Visual Storytelling</h3>
+          <p>Creating clear and engaging visuals that communicate ideas through design, layout, and storytelling.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">07.</span>
+          <h3>Advertising Design</h3>
+          <p>Designing banners, poster templates, and high-conversion social media ads.</p>
+        </div>
+
+        <div class="expertise-card reveal-fade-up">
+          <span class="expertise-num">08.</span>
+          <h3>Campaign Concepting</h3>
+          <p>Developing creative ideas from drafts to polished commercial design assets.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tools Section (Official Logos Grid) -->
+  <section id="tools">
+    <div class="container">
+      <div class="section-header reveal-fade-up">
+        <span class="section-label">03 / Tool Stack</span>
+        <h2 class="section-title">Software and creative AI tools I use.</h2>
+      </div>
+
+      <div class="tools-container">
+        <!-- AI Tools Group -->
+        <div class="tools-group">
+          <h3 class="tools-group-title">AI Tools</h3>
+          <div class="tools-grid">
+            <!-- ChatGPT -->
+            <div class="tool-card reveal-fade-up" title="ChatGPT" style="--brand-glow: #10a37f;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/ChatGPT.png" alt="ChatGPT" />
+              </div>
+              <span class="tool-name">ChatGPT</span>
+            </div>
+
+            <!-- Claude AI -->
+            <div class="tool-card reveal-fade-up" title="Claude AI" style="--brand-glow: #d97706;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Claude.png" alt="Claude AI" />
+              </div>
+              <span class="tool-name">Claude AI</span>
+            </div>
+
+            <!-- Midjourney -->
+            <div class="tool-card reveal-fade-up" title="Midjourney" style="--brand-glow: #3498db;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Midjourney.png" alt="Midjourney" />
+              </div>
+              <span class="tool-name">Midjourney</span>
+            </div>
+
+            <!-- Leonardo AI -->
+            <div class="tool-card reveal-fade-up" title="Leonardo AI" style="--brand-glow: #e74c3c;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Leonardo AI.png" alt="Leonardo AI" />
+              </div>
+              <span class="tool-name">Leonardo AI</span>
+            </div>
+
+            <!-- Ideogram -->
+            <div class="tool-card reveal-fade-up" title="Ideogram" style="--brand-glow: #2c3e50;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Ideogram.png" alt="Ideogram" />
+              </div>
+              <span class="tool-name">Ideogram</span>
+            </div>
+
+            <!-- Runway -->
+            <div class="tool-card reveal-fade-up" title="Runway" style="--brand-glow: #e67e22;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Runway.png" alt="Runway" />
+              </div>
+              <span class="tool-name">Runway</span>
+            </div>
+
+            <!-- Kling AI -->
+            <div class="tool-card reveal-fade-up" title="Kling AI" style="--brand-glow: #9b59b6;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/KlingAI.png" alt="Kling AI" />
+              </div>
+              <span class="tool-name">Kling AI</span>
+            </div>
+
+            <!-- Flow -->
+            <div class="tool-card reveal-fade-up" title="Flow" style="--brand-glow: #1abc9c;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Flow.png" alt="Flow" />
+              </div>
+              <span class="tool-name">Flow</span>
+            </div>
+
+            <!-- Higgsfield -->
+            <div class="tool-card reveal-fade-up" title="Higgsfield" style="--brand-glow: #2ecc71;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Higgsfield.png" alt="Higgsfield" />
+              </div>
+              <span class="tool-name">Higgsfield</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Software Group -->
+        <div class="tools-group">
+          <h3 class="tools-group-title">Software</h3>
+          <div class="tools-grid">
+            <!-- Photoshop -->
+            <div class="tool-card reveal-fade-up" title="Adobe Photoshop" style="--brand-glow: #001e36;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Photoshop.png" alt="Photoshop" />
+              </div>
+              <span class="tool-name">Photoshop</span>
+            </div>
+
+            <!-- Illustrator -->
+            <div class="tool-card reveal-fade-up" title="Adobe Illustrator" style="--brand-glow: #330000;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Illustrator.png" alt="Illustrator" />
+              </div>
+              <span class="tool-name">Illustrator</span>
+            </div>
+
+            <!-- Premiere Pro -->
+            <div class="tool-card reveal-fade-up" title="Adobe Premiere Pro" style="--brand-glow: #14002e;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Premiere Pro.png" alt="Premiere Pro" />
+              </div>
+              <span class="tool-name">Premiere Pro</span>
+            </div>
+
+            <!-- Canva -->
+            <div class="tool-card reveal-fade-up" title="Canva" style="--brand-glow: #00c2cb;">
+              <div class="tool-icon-wrapper">
+                <img class="tool-logo" src="logos/Canva.png" alt="Canva" />
+              </div>
+              <span class="tool-name">Canva</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Projects Portfolio Section -->
+  <section id="portfolio">
+    <div class="container">
+      
+      <!-- 1. Master "All Projects" Section -->
+      <div class="portfolio-master">
+        <div class="section-header reveal-fade-up">
+          <span class="section-label">04 / Showcase</span>
+          <h2 class="section-title">All Projects</h2>
+        </div>
+        
+        <!-- Search and Filter Panel -->
+        <div class="portfolio-controls reveal-fade-up">
+          <div class="search-box">
+            <input type="text" id="projectSearch" placeholder="Search by title, tool, or category..." aria-label="Search projects">
+          </div>
+          <div class="portfolio-filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="design">Design Creatives</button>
+          </div>
+        </div>
+
+        <!-- Master grid -->
+        <div id="allProjectsGrid" class="masonry-container">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+
+
+    </div>
+  </section>
+
+  <!-- Dedicated AI Video Showcase Section -->
+  <section id="videos">
+    <div class="container">
+      <div class="section-header reveal-fade-up">
+        <span class="section-label">05 / Motion</span>
+        <h2 class="section-title">AI Video Showcase</h2>
+      </div>
+
+      <div class="video-grid" id="videoGrid">
+        <!-- Populated dynamically via script.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Experience Section -->
+  <section id="experience">
+    <div class="container">
+      <div class="section-header reveal-fade-up">
+        <span class="section-label">06 / Experience</span>
+        <h2 class="section-title">Work history and timeline.</h2>
+      </div>
+
+      <div class="timeline-grid">
+        <div class="timeline-card reveal-fade-up">
+          <div class="timeline-header">
+            <h3>Freelance Generative AI Designer</h3>
+            <h4>Mumbai, India</h4>
+            <span class="badge">Oct 2025 - Present</span>
+          </div>
+          <div class="timeline-body">
+            <p>
+              Creating brand identities, product visual campaigns, and conceptual designs for modern brands. Working on freelance projects to design high-quality graphics and marketing assets.
+            </p>
+            
+            <span class="contact-item-label" style="margin-bottom:1rem;">Selected Brands &amp; Projects</span>
+            <div class="brand-client-grid">
+              <div class="brand-client-item">RIVEA</div>
+              <div class="brand-client-item">GlowSkin</div>
+              <div class="brand-client-item">RYDR</div>
+              <div class="brand-client-item">SCOOPA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact">
+    <div class="container">
+        <div class="section-header reveal-fade-up">
+          <span class="section-label">07 / Contact</span>
+          <h2 class="section-title">Let's work together.</h2>
+        </div>
+        <div class="contact-cards-grid reveal-fade-up">
+          <!-- WhatsApp Card -->
+          <a href="https://wa.me/918626043915?text=Hi%20Gurunarayan%2C%20I%20visited%20your%20portfolio%20and%20really%20liked%20your%20work.%20I%27m%20interested%20in%20discussing%20a%20project%20with%20you.%20Looking%20forward%20to%20hearing%20from%20you." target="_blank" rel="noopener" class="contact-card whatsapp-card" style="--brand-glow: #25d366;">
+            <div class="contact-card-icon">
+              <img src="logos/whatsapp.png" alt="WhatsApp" class="contact-logo-img" />
+            </div>
+            <div class="contact-card-info">
+              <span class="contact-card-label">WhatsApp</span>
+              <span class="contact-card-value">Direct Chat</span>
+            </div>
+            <span class="contact-card-prompt">Open chat window &rarr;</span>
+          </a>
+
+          <!-- Email Card -->
+          <a href="mailto:gurunarayan.sharmaa@gmail.com?subject=Project%20Discussion" class="contact-card email-card" style="--brand-glow: #ea4335;">
+            <div class="contact-card-icon">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+              </svg>
+            </div>
+            <div class="contact-card-info">
+              <span class="contact-card-label">Email</span>
+              <span class="contact-card-value">gurunarayan.sharmaa@gmail.com</span>
+            </div>
+            <span class="contact-card-prompt">Send email &rarr;</span>
+          </a>
+
+          <!-- Behance Card -->
+          <a href="https://www.behance.net/gurusharma6" target="_blank" rel="noopener" class="contact-card behance-card" style="--brand-glow: #0057ff;">
+            <div class="contact-card-icon">
+              <img src="logos/Behance.png" alt="Behance" class="contact-logo-img" />
+            </div>
+            <div class="contact-card-info">
+              <span class="contact-card-label">Behance</span>
+              <span class="contact-card-value">behance.net/gurusharma6</span>
+            </div>
+            <span class="contact-card-prompt">View gallery &rarr;</span>
+          </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fullscreen Project Detail Page View Container -->
+  <div id="projectPageView" class="project-page-view" role="main" aria-label="Project Subpage View">
+    <!-- Populated dynamically via script.js -->
+  </div>
+
+  <!-- Premium Video Password Unlock Modal -->
+  <div id="unlockModal" class="unlock-modal" role="dialog" aria-modal="true" aria-labelledby="unlockTitle">
+    <div class="unlock-modal-box">
+      <button class="unlock-modal-close" id="unlockModalClose" aria-label="Close modal">
+        <span></span>
+        <span></span>
+      </button>
+      <h3 class="unlock-title" id="unlockTitle">Unlock Showcase</h3>
+      <p class="unlock-desc">Enter your access password to view the locked showcase.</p>
+      
+      <div class="password-form-group" style="text-align: left; margin-top: 1.5rem;">
+        <input type="password" id="videoPasswordInput" class="password-input" placeholder="Enter password" aria-label="Password Input">
+        <p id="passwordFeedback" class="password-feedback-msg" style="display: none; color: #ff3b30; font-size: 0.85rem; margin-top: 0.75rem; font-weight: 500; text-align: center;"></p>
+      </div>
+
+      <div class="unlock-actions" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <button id="videoUnlockSubmitBtn" class="btn btn-primary" style="width: 100%; padding: 1rem;">Unlock</button>
+        <button id="unlockModalCancel" class="btn btn-secondary" style="width: 100%; padding: 1rem;">Cancel</button>
+        <a href="" id="whatsappUnlockBtn" target="_blank" class="btn btn-secondary" style="width: 100%; padding: 1rem; border-color: rgba(0,0,0,0.15); justify-content: center;">Contact on WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Video Player Modal -->
+  <div id="videoModal" class="video-modal" role="dialog" aria-modal="true" aria-label="Fullscreen Video Player">
+    <button class="video-modal-close" id="videoModalClose" aria-label="Close video player">
+      <span></span>
+      <span></span>
+    </button>
+    <div class="video-modal-content">
+      <video id="videoModalPlayer" src="" controls autoplay playsinline></video>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <span class="footer-copy">&copy; 2026 GURUNARAYAN SHARMA. All rights reserved.</span>
+      <div class="footer-socials">
+        <span class="footer-name">Gurunarayan Sharma</span>
+        <a href="https://wa.me/918626043915" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="mailto:gurunarayan.sharmaa@gmail.com">Email</a>
+        <a href="https://www.behance.net/gurusharma6" target="_blank" rel="noopener">Behance</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="images-metadata.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
