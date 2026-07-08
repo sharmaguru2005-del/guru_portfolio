@@ -388,6 +388,7 @@ function initPortfolioMaster() {
 
     // Initialize 3D dynamic tilt interaction
     initCardTilt();
+    lazyLoadProjectImages();
   }
 
   let resizeTimer;
@@ -417,9 +418,9 @@ function createProjectCardElement(project) {
   card.innerHTML = `
     <div class="project-img-wrapper" style="padding-bottom: ${pb}%;">
       <div class="project-img-stack">
-        <img class="project-img stack-img stack-img-1" src="${img1}" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-2" src="${img2}" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-3" src="${img3}" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-1" data-src="${img1}" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-2" data-src="${img2}" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-3" data-src="${img3}" alt="${project.title}" loading="lazy" />
       </div>
     </div>
     <div class="project-info">
@@ -427,6 +428,13 @@ function createProjectCardElement(project) {
       <h4 class="project-title">${project.title}</h4>
     </div>
   `;
+
+  // Fade-in onLoad event listener setup
+  card.querySelectorAll(".project-img").forEach((img) => {
+    img.addEventListener("load", () => {
+      img.classList.add("loaded");
+    });
+  });
 
   // Click & Keypress activation
   const navigate = () => {
@@ -490,6 +498,20 @@ function initVideosShowcase() {
     return a.locked ? 1 : -1;
   });
 
+  // viewport intersection observer to manage mobile loops
+  const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const v = entry.target.querySelector(".portfolio-video");
+      if (v) {
+        if (entry.isIntersecting) {
+          v.play().catch(() => {});
+        } else {
+          v.pause();
+        }
+      }
+    });
+  }, { threshold: 0.5 });
+
   PORTFOLIO_VIDEOS.forEach((video) => {
     const card = document.createElement("div");
     card.className = `video-card ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
@@ -510,7 +532,7 @@ function initVideosShowcase() {
             </div>
           </div>
         ` : `
-          <video class="portfolio-video" src="${video.filePath}" preload="metadata" muted loop playsinline autoplay></video>
+          <video class="portfolio-video" src="${video.filePath}" preload="metadata" muted loop playsinline></video>
         `}
       </div>
       <div class="video-info">
@@ -550,6 +572,22 @@ function initVideosShowcase() {
         }
       });
       card.style.cursor = "pointer";
+
+      // Hover controls for desktop preview Loops
+      card.addEventListener("mouseenter", () => {
+        const v = card.querySelector(".portfolio-video");
+        if (v) v.play().catch(() => {});
+      });
+      card.addEventListener("mouseleave", () => {
+        const v = card.querySelector(".portfolio-video");
+        if (v) {
+          v.pause();
+          v.currentTime = 0;
+        }
+      });
+
+      // Viewport listener for mobile playback triggers
+      videoObserver.observe(card);
     }
 
     grid.appendChild(card);
@@ -926,4 +964,26 @@ function customHash(str) {
     hash = (hash * 31 + str.charCodeAt(i)) % 4294967296;
   }
   return hash;
+}
+
+/* -----------------------------------------------
+   14. High-Performance IntersectionObserver Lazy Loader
+   ----------------------------------------------- */
+function lazyLoadProjectImages() {
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.removeAttribute("data-src");
+        }
+        obs.unobserve(img);
+      }
+    });
+  }, { rootMargin: "120px" });
+
+  document.querySelectorAll(".project-img[data-src]").forEach((img) => {
+    observer.observe(img);
+  });
 }
