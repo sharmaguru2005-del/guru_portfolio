@@ -388,7 +388,6 @@ function initPortfolioMaster() {
 
     // Initialize 3D dynamic tilt interaction
     initCardTilt();
-    lazyLoadProjectImages();
   }
 
   let resizeTimer;
@@ -407,20 +406,23 @@ function createProjectCardElement(project) {
   card.style.setProperty("--project-hover-accent", `var(--theme-${project.theme})`);
   card.setAttribute("data-name", project.id);
   card.setAttribute("tabindex", "0");
-
   const coverImage = project.images[0];
   const pb = (1 / coverImage.aspectRatio) * 100;
 
-  const img1 = coverImage.filePath;
-  const img2 = project.images[1] ? project.images[1].filePath : img1;
-  const img3 = project.images[2] ? project.images[2].filePath : img1;
+  const img1Original = coverImage.filePath;
+  const img2Original = project.images[1] ? project.images[1].filePath : img1Original;
+  const img3Original = project.images[2] ? project.images[2].filePath : img1Original;
+
+  const img1Thumb = getThumbnailPath(img1Original);
+  const img2Thumb = project.images[1] ? getThumbnailPath(project.images[1].filePath) : img1Thumb;
+  const img3Thumb = project.images[2] ? getThumbnailPath(project.images[2].filePath) : img1Thumb;
 
   card.innerHTML = `
     <div class="project-img-wrapper" style="padding-bottom: ${pb}%;">
       <div class="project-img-stack">
-        <img class="project-img stack-img stack-img-1" data-src="${img1}" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-2" data-src="${img2}" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-3" data-src="${img3}" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-1" src="${img1Thumb}" onerror="this.onerror=null; this.src='${img1Original}';" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-2" src="${img2Thumb}" onerror="this.onerror=null; this.src='${img2Original}';" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-3" src="${img3Thumb}" onerror="this.onerror=null; this.src='${img3Original}';" alt="${project.title}" loading="lazy" />
       </div>
     </div>
     <div class="project-info">
@@ -428,14 +430,6 @@ function createProjectCardElement(project) {
       <h4 class="project-title">${project.title}</h4>
     </div>
   `;
-
-  // Fade-in onLoad event listener setup
-  card.querySelectorAll(".project-img").forEach((img) => {
-    img.addEventListener("load", () => {
-      img.classList.add("loaded");
-    });
-  });
-
   // Click & Keypress activation
   const navigate = () => {
     window.location.hash = `#/project/${encodeURIComponent(project.id)}`;
@@ -773,7 +767,7 @@ function renderProjectPageContent(project) {
             <div class="filmstrip-track" id="filmstripTrack">
               ${project.images.map((img, idx) => `
                 <div class="filmstrip-thumb ${idx === 0 ? 'active' : ''}" data-index="${idx}" tabindex="0">
-                  <img src="${img.filePath}" alt="${project.title} gallery thumbnail ${idx + 1}" />
+                  <img src="${getThumbnailPath(img.filePath)}" onerror="this.onerror=null; this.src='${img.filePath}';" alt="${project.title} gallery thumbnail ${idx + 1}" loading="lazy" />
                 </div>
               `).join("")}
             </div>
@@ -966,24 +960,24 @@ function customHash(str) {
   return hash;
 }
 
-/* -----------------------------------------------
-   14. High-Performance IntersectionObserver Lazy Loader
-   ----------------------------------------------- */
-function lazyLoadProjectImages() {
-  const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const img = entry.target;
-        if (img.dataset.src) {
-          img.src = img.dataset.src;
-          img.removeAttribute("data-src");
-        }
-        obs.unobserve(img);
-      }
-    });
-  }, { rootMargin: "120px" });
 
-  document.querySelectorAll(".project-img[data-src]").forEach((img) => {
-    observer.observe(img);
-  });
+
+/* -----------------------------------------------
+   15. Lightweight Thumbnail Path Helper
+   ----------------------------------------------- */
+function getThumbnailPath(filePath) {
+  if (!filePath) return "";
+  const decoded = decodeURIComponent(filePath);
+  const parts = decoded.split('/');
+  if (parts.length < 2) return filePath;
+
+  const fileName = parts.pop();
+  const lastDot = fileName.lastIndexOf('.');
+  const fileBaseName = lastDot > -1 ? fileName.substring(0, lastDot) : fileName;
+  
+  parts.push('thumbnails');
+  parts.push(fileBaseName + '.jpg');
+  
+  const result = parts.join('/');
+  return encodeURI(result);
 }
