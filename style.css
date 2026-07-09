@@ -454,12 +454,6 @@ header.scrolled .menu-toggle span {
 }
 
 @media (max-width: 1024px) {
-  .hero-layout {
-    grid-template-columns: 1fr;
-    gap: 4rem;
-  }
-}
-@media (max-width: 768px) {
   #hero {
     height: auto;
     min-height: 100vh;
@@ -494,11 +488,20 @@ header.scrolled .menu-toggle span {
     margin-bottom: 0.75rem;
   }
   .hero-name {
-    font-size: clamp(2.2rem, 9vw, 4rem);
-    line-height: 1.05;
+    font-size: clamp(1.8rem, 8.5vw, 3.8rem);
+    line-height: 1.1;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
     width: 100%;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+  }
+  .hero-name br {
+    display: none;
+  }
+  .hero-name-alt::before {
+    content: ' ';
+    display: inline;
   }
   .hero-body-block {
     display: flex;
@@ -539,10 +542,13 @@ header.scrolled .menu-toggle span {
   .hero-actions .btn {
     width: 100%;
     max-width: 260px;
-    padding: 0.9rem 1.5rem;
+    min-height: 48px; /* Touch target target of at least 44px */
+    padding: 0.75rem 1.5rem;
     font-size: 0.85rem;
     justify-content: center;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
   }
   .hero-visual-container {
     order: 4;
@@ -2374,6 +2380,33 @@ footer .container {
   .about-meta {
     gap: 2rem;
   }
+}
+
+/* Mobile & Tablet Button Touch Target Optimizations */
+@media (max-width: 1024px) {
+  .btn, .filter-btn, .sibling-nav-btn, .project-page-close, .video-modal-close {
+    min-height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  .menu-toggle {
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px !important;
+    box-sizing: border-box;
+  }
+  .menu-toggle span {
+    position: absolute;
+    width: 26px;
+  }
+  .menu-toggle span:nth-child(1) { top: 12px; }
+  .menu-toggle span:nth-child(2) { top: 21px; }
+  .menu-toggle span:nth-child(3) { top: 30px; }
 }
 
 /* -----------------------------------------------

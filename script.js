@@ -759,7 +759,7 @@ function renderProjectPageContent(project) {
         <div class="gallery-main-area">
           <div class="main-preview-container" id="galleryContainer">
             <div class="main-preview-slide">
-              <img class="main-preview-img loaded" src="${project.images[0].filePath}" alt="${project.title}" id="projectActiveImage" />
+              <img class="main-preview-img" src="${project.images[0].filePath}" alt="${project.title}" id="projectActiveImage" />
             </div>
           </div>
           
@@ -810,6 +810,17 @@ function renderProjectPageContent(project) {
 
     </div>
   `;
+
+  // Bind onload listener for the first visible image
+  const firstActiveImg = overlay.querySelector("#projectActiveImage");
+  if (firstActiveImg) {
+    firstActiveImg.onload = () => {
+      firstActiveImg.classList.add("loaded");
+    };
+    if (firstActiveImg.complete) {
+      firstActiveImg.classList.add("loaded");
+    }
+  }
 
   // Bind Filmstrip navigation events
   const thumbs = overlay.querySelectorAll(".filmstrip-thumb");
@@ -867,10 +878,13 @@ function setActiveImage(index) {
   if (activeImgEl) {
     activeImgEl.classList.remove("loaded");
     setTimeout(() => {
-      activeImgEl.src = activeProject.images[index].filePath;
       activeImgEl.onload = () => {
         activeImgEl.classList.add("loaded");
       };
+      activeImgEl.src = activeProject.images[index].filePath;
+      if (activeImgEl.complete) {
+        activeImgEl.classList.add("loaded");
+      }
     }, 250);
   }
 
