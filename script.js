@@ -388,6 +388,7 @@ function initPortfolioMaster() {
 
     // Initialize 3D dynamic tilt interaction
     initCardTilt();
+    lazyLoadProjectImages();
   }
 
   let resizeTimer;
@@ -420,9 +421,9 @@ function createProjectCardElement(project) {
   card.innerHTML = `
     <div class="project-img-wrapper" style="padding-bottom: ${pb}%;">
       <div class="project-img-stack">
-        <img class="project-img stack-img stack-img-1" src="${img1Thumb}" onerror="this.onerror=null; this.src='${img1Original}';" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-2" src="${img2Thumb}" onerror="this.onerror=null; this.src='${img2Original}';" alt="${project.title}" loading="lazy" />
-        <img class="project-img stack-img stack-img-3" src="${img3Thumb}" onerror="this.onerror=null; this.src='${img3Original}';" alt="${project.title}" loading="lazy" />
+        <img class="project-img stack-img stack-img-1" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" data-src="${img1Thumb}" onerror="this.onerror=null; this.src='${img1Original}';" alt="${project.title}" loading="lazy" decoding="async" />
+        <img class="project-img stack-img stack-img-2" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" data-src="${img2Thumb}" onerror="this.onerror=null; this.src='${img2Original}';" alt="${project.title}" loading="lazy" decoding="async" />
+        <img class="project-img stack-img stack-img-3" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" data-src="${img3Thumb}" onerror="this.onerror=null; this.src='${img3Original}';" alt="${project.title}" loading="lazy" decoding="async" />
       </div>
     </div>
     <div class="project-info">
@@ -492,20 +493,6 @@ function initVideosShowcase() {
     return a.locked ? 1 : -1;
   });
 
-  // viewport intersection observer to manage mobile loops
-  const videoObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const v = entry.target.querySelector(".portfolio-video");
-      if (v) {
-        if (entry.isIntersecting) {
-          v.play().catch(() => {});
-        } else {
-          v.pause();
-        }
-      }
-    });
-  }, { threshold: 0.5 });
-
   PORTFOLIO_VIDEOS.forEach((video) => {
     const card = document.createElement("div");
     card.className = `video-card ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
@@ -567,21 +554,20 @@ function initVideosShowcase() {
       });
       card.style.cursor = "pointer";
 
-      // Hover controls for desktop preview Loops
-      card.addEventListener("mouseenter", () => {
-        const v = card.querySelector(".portfolio-video");
-        if (v) v.play().catch(() => {});
-      });
-      card.addEventListener("mouseleave", () => {
-        const v = card.querySelector(".portfolio-video");
-        if (v) {
-          v.pause();
-          v.currentTime = 0;
-        }
-      });
-
-      // Viewport listener for mobile playback triggers
-      videoObserver.observe(card);
+      // Hover controls for desktop preview Loops (only for pointer: fine devices)
+      if (window.matchMedia("(pointer: fine)").matches) {
+        card.addEventListener("mouseenter", () => {
+          const v = card.querySelector(".portfolio-video");
+          if (v) v.play().catch(() => {});
+        });
+        card.addEventListener("mouseleave", () => {
+          const v = card.querySelector(".portfolio-video");
+          if (v) {
+            v.pause();
+            v.currentTime = 0;
+          }
+        });
+      }
     }
 
     grid.appendChild(card);
@@ -822,6 +808,14 @@ function renderProjectPageContent(project) {
     }
   }
 
+  // Preload next 2 gallery images in the background to make subpage navigation instant
+  if (project.images.length > 1) {
+    for (let i = 1; i <= Math.min(2, project.images.length - 1); i++) {
+      const preloadImg = new Image();
+      preloadImg.src = project.images[i].filePath;
+    }
+  }
+
   // Bind Filmstrip navigation events
   const thumbs = overlay.querySelectorAll(".filmstrip-thumb");
   thumbs.forEach(thumb => {
@@ -947,6 +941,8 @@ function openVideoModal(videoSrc) {
   if (!modal || !player) return;
 
   player.src = videoSrc;
+  player.muted = true;
+  player.loop = true;
   modal.classList.add("active");
   document.body.classList.add("lock-scroll");
   player.play().catch(() => {});
@@ -977,6 +973,35 @@ function customHash(str) {
 
 
 /* -----------------------------------------------
+   14. High-Performance IntersectionObserver Lazy Loader
+   ----------------------------------------------- */
+function lazyLoadProjectImages() {
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        if (img.dataset.src) {
+          const handleLoad = () => {
+            img.classList.add("loaded");
+          };
+          img.onload = handleLoad;
+          img.src = img.dataset.src;
+          if (img.complete) {
+            img.classList.add("loaded");
+          }
+          img.removeAttribute("data-src");
+        }
+        obs.unobserve(img);
+      }
+    });
+  }, { rootMargin: "150px" });
+
+  document.querySelectorAll(".project-img[data-src]").forEach((img) => {
+    observer.observe(img);
+  });
+}
+
+/* -----------------------------------------------
    15. Lightweight Thumbnail Path Helper
    ----------------------------------------------- */
 function getThumbnailPath(filePath) {
@@ -995,3 +1020,4 @@ function getThumbnailPath(filePath) {
   const result = parts.join('/');
   return encodeURI(result);
 }
+
