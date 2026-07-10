@@ -35,8 +35,9 @@ function processVideosDatabase() {
     "2.Rivea Skincare.mp4": { title: "Rivea Skincare Campaign", isHorizontal: false, locked: false, filePath: "./AI%20videos/2.Rivea%20Skincare.mp4" },
     "3.DJGF Show.mp4": { title: "DJGF Show", isHorizontal: false, locked: false, filePath: "./AI%20videos/3.DJGF%20Show.mp4" },
     "4.VIVI Honey.mp4": { title: "VIVI Honey Commercial", isHorizontal: false, locked: false, filePath: "./AI%20videos/4.VIVI%20Honey.mp4" },
-    "boAt.mp4": { title: "boAt Wearables Campaign", isHorizontal: true, locked: true, filePath: "./AI%20videos/boAt.mp4" },
-    "Burger ad.mp4": { title: "Burger Gourmet Campaign", isHorizontal: true, locked: true, filePath: "./AI%20videos/Burger%20ad.mp4" },
+    "boAt.mp4": { title: "boAt Campaign", isHorizontal: true, locked: true, filePath: "./AI%20videos/boAt.mp4" },
+
+    "Burger ad.mp4": { title: "Burger Campaign", isHorizontal: true, locked: true, filePath: "./AI%20videos/Burger%20ad.mp4" },
     "daWg.mp4": { title: "daWg Campaign", isHorizontal: false, locked: true, filePath: "./AI%20videos/daWg.mp4" },
     "Mother' Day video.mp4": { title: "Mother's Day Special", isHorizontal: false, locked: false, filePath: "./AI%20videos/Mother%27%20Day%20video.mp4" }
   };
@@ -242,7 +243,7 @@ function initRevealAnimations() {
   // Header scroll transition
   const header = document.querySelector("header");
   window.addEventListener("scroll", () => {
-    if (window.scrollY > 50) {
+    if (window.scrollY > 100) {
       header.classList.add("scrolled");
     } else {
       header.classList.remove("scrolled");
@@ -428,7 +429,10 @@ function createProjectCardElement(project) {
     </div>
     <div class="project-info">
       <div class="project-accent-line"></div>
-      <h4 class="project-title">${project.title}</h4>
+      <div class="project-title-container">
+        <h4 class="project-title">${project.title}</h4>
+        <svg class="project-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </div>
     </div>
   `;
   // Click & Keypress activation
@@ -745,7 +749,7 @@ function renderProjectPageContent(project) {
         <div class="gallery-main-area">
           <div class="main-preview-container" id="galleryContainer">
             <div class="main-preview-slide">
-              <img class="main-preview-img" src="${project.images[0].filePath}" alt="${project.title}" id="projectActiveImage" />
+              <img class="main-preview-img" src="${project.images[0].filePath}" width="${project.images[0].width}" height="${project.images[0].height}" alt="${project.title}" id="projectActiveImage" decoding="async" fetchpriority="high" />
             </div>
           </div>
           
@@ -808,13 +812,18 @@ function renderProjectPageContent(project) {
     }
   }
 
-  // Preload next 2 gallery images in the background to make subpage navigation instant
-  if (project.images.length > 1) {
-    for (let i = 1; i <= Math.min(2, project.images.length - 1); i++) {
-      const preloadImg = new Image();
-      preloadImg.src = project.images[i].filePath;
-    }
+  // Preload only the first visible image of the project page
+  const firstImageSrc = project.images[0].filePath;
+  let preloadLink = document.getElementById("project-first-image-preload");
+  if (!preloadLink) {
+    preloadLink = document.createElement("link");
+    preloadLink.id = "project-first-image-preload";
+    preloadLink.rel = "preload";
+    preloadLink.as = "image";
+    document.head.appendChild(preloadLink);
   }
+  preloadLink.href = firstImageSrc;
+  preloadLink.setAttribute("fetchpriority", "high");
 
   // Bind Filmstrip navigation events
   const thumbs = overlay.querySelectorAll(".filmstrip-thumb");
@@ -870,16 +879,29 @@ function setActiveImage(index) {
   const thumbs = document.querySelectorAll(".filmstrip-thumb");
 
   if (activeImgEl) {
-    activeImgEl.classList.remove("loaded");
-    setTimeout(() => {
-      activeImgEl.onload = () => {
+    const newSrc = activeProject.images[index].filePath;
+    const tempImg = new Image();
+    tempImg.src = newSrc;
+    tempImg.decoding = "async";
+    
+    tempImg.decode().then(() => {
+      activeImgEl.classList.remove("loaded");
+      setTimeout(() => {
+        activeImgEl.src = newSrc;
         activeImgEl.classList.add("loaded");
-      };
-      activeImgEl.src = activeProject.images[index].filePath;
-      if (activeImgEl.complete) {
-        activeImgEl.classList.add("loaded");
-      }
-    }, 250);
+      }, 100);
+    }).catch(() => {
+      activeImgEl.classList.remove("loaded");
+      setTimeout(() => {
+        activeImgEl.src = newSrc;
+        activeImgEl.onload = () => {
+          activeImgEl.classList.add("loaded");
+        };
+        if (activeImgEl.complete) {
+          activeImgEl.classList.add("loaded");
+        }
+      }, 100);
+    });
   }
 
   thumbs.forEach(thumb => {
@@ -981,14 +1003,21 @@ function lazyLoadProjectImages() {
       if (entry.isIntersecting) {
         const img = entry.target;
         if (img.dataset.src) {
-          const handleLoad = () => {
+          const tempImg = new Image();
+          tempImg.src = img.dataset.src;
+          tempImg.decoding = "async";
+          tempImg.decode().then(() => {
+            img.src = tempImg.src;
             img.classList.add("loaded");
-          };
-          img.onload = handleLoad;
-          img.src = img.dataset.src;
-          if (img.complete) {
-            img.classList.add("loaded");
-          }
+          }).catch(() => {
+            img.src = img.dataset.src;
+            img.onload = () => {
+              img.classList.add("loaded");
+            };
+            if (img.complete) {
+              img.classList.add("loaded");
+            }
+          });
           img.removeAttribute("data-src");
         }
         obs.unobserve(img);
@@ -1007,6 +1036,9 @@ function lazyLoadProjectImages() {
 function getThumbnailPath(filePath) {
   if (!filePath) return "";
   const decoded = decodeURIComponent(filePath);
+  if (decoded.toLowerCase().includes("thumbnail") || decoded.toLowerCase().includes("thumabnail")) {
+    return filePath;
+  }
   const parts = decoded.split('/');
   if (parts.length < 2) return filePath;
 
@@ -1020,4 +1052,5 @@ function getThumbnailPath(filePath) {
   const result = parts.join('/');
   return encodeURI(result);
 }
+
 

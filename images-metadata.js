@@ -1,4 +1,4 @@
-﻿// GURUNARAYAN SHARMA PORTFOLIO DATABASE (GENERATED AUTOMATICALLY)
+// GURUNARAYAN SHARMA PORTFOLIO DATABASE (GENERATED AUTOMATICALLY)
 const PORTFOLIO_PROJECTS = [
     {
         "id":  "ai-photography",
@@ -428,13 +428,6 @@ const PORTFOLIO_PROJECTS = [
                        },
                        {
                            "width":  1792,
-                           "filePath":  "./Design%20Creatives/Rivea/{__prompt___Create_ultra_luxury_skincare_202605262347.jpeg",
-                           "name":  "{__prompt___Create_ultra_luxury_skincare_202605262347.jpeg",
-                           "aspectRatio":  0.7467,
-                           "height":  2400
-                       },
-                       {
-                           "width":  1792,
                            "filePath":  "./Design%20Creatives/Rivea/{__prompt___Design_a_luxury_campaign_202605262108.jpeg",
                            "name":  "{__prompt___Design_a_luxury_campaign_202605262108.jpeg",
                            "aspectRatio":  0.7467,
@@ -477,8 +470,8 @@ const PORTFOLIO_PROJECTS = [
                        },
                        {
                            "width":  1792,
-                           "filePath":  "./Design%20Creatives/Rivea/Lip%202.jpeg",
-                           "name":  "Lip 2.jpeg",
+                           "filePath":  "./Design%20Creatives/Rivea/lip.jpeg",
+                           "name":  "lip.jpeg",
                            "aspectRatio":  0.7467,
                            "height":  2400
                        },
@@ -501,6 +494,13 @@ const PORTFOLIO_PROJECTS = [
         "description":  "Inspired by the roadrunner, this campaign highlights fast, reliable delivery.",
         "images":  [
                        {
+                           "width":  1086,
+                           "filePath":  "./Design%20Creatives/RYDR/rydr.png",
+                           "name":  "rydr.png",
+                           "aspectRatio":  0.75,
+                           "height":  1448
+                       },
+                       {
                            "width":  1122,
                            "filePath":  "./Design%20Creatives/RYDR/ChatGPT%20Image%20Jun%201,%202026,%2001_22_31%20AM.png",
                            "name":  "ChatGPT Image Jun 1, 2026, 01_22_31 AM.png",
@@ -520,13 +520,6 @@ const PORTFOLIO_PROJECTS = [
                            "name":  "ChatGPT Image Jun 1, 2026, 01_35_55 AM.png",
                            "aspectRatio":  0.6667,
                            "height":  1536
-                       },
-                       {
-                           "width":  1086,
-                           "filePath":  "./Design%20Creatives/RYDR/ChatGPT%20Image%20Jun%201,%202026,%2001_36_35%20AM.png",
-                           "name":  "ChatGPT Image Jun 1, 2026, 01_36_35 AM.png",
-                           "aspectRatio":  0.75,
-                           "height":  1448
                        },
                        {
                            "width":  1792,
