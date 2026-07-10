@@ -336,9 +336,6 @@ header.scrolled .second-word {
     width: 40px;
     height: 40px;
   }
-  .nav-name {
-    display: none !important;
-  }
 }
 
 .nav-links {
@@ -1836,13 +1833,12 @@ button:focus-visible,
   height: auto;
   object-fit: contain;
   display: block;
-  transform: scale(0.98);
   opacity: 0;
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  transition: opacity 180ms ease;
+  will-change: opacity;
 }
 
 .main-preview-img.loaded {
-  transform: scale(1);
   opacity: 1;
 }
 

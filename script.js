@@ -26,6 +26,9 @@ const PROJECT_ORDER = [
   "ai-photography"
 ];
 
+// Global preloaded images cache
+const PRELOADED_IMAGES = {};
+
 // Predefined metadata mapping to enhance the dynamically loaded global PORTFOLIO_VIDEOS array
 function processVideosDatabase() {
   if (typeof PORTFOLIO_VIDEOS === "undefined") return;
@@ -723,6 +726,9 @@ function renderProjectPageContent(project) {
   activeProject = project;
   currentImageIndex = 0;
   
+  // Preload first batch of nearby images immediately in the background
+  preloadNearbyImages(0);
+  
   const overlay = document.getElementById("projectPageView");
   if (!overlay) return;
 
@@ -870,6 +876,43 @@ function renderProjectPageContent(project) {
   attachCursorHoverListeners();
 }
 
+function preloadNearbyImages(index) {
+  if (!activeProject) return;
+  const images = activeProject.images;
+  const len = images.length;
+  if (len <= 1) return;
+  
+  // Indices to preload: next 2 and previous 1
+  const indicesToPreload = [
+    (index + 1) % len,
+    (index + 2) % len,
+    (index - 1 + len) % len
+  ];
+  
+  indicesToPreload.forEach(idx => {
+    const src = images[idx].filePath;
+    if (!PRELOADED_IMAGES[src]) {
+      const img = new Image();
+      img.src = src;
+      img.decoding = "async";
+      img.decode().catch(() => {});
+      PRELOADED_IMAGES[src] = img;
+    }
+  });
+  
+  // Keep only nearby assets in memory (range of +/- 3)
+  Object.keys(PRELOADED_IMAGES).forEach(src => {
+    const isNearby = images.some((img, idx) => {
+      if (img.filePath !== src) return false;
+      const diff = Math.abs(idx - index);
+      return diff <= 3 || diff >= len - 3;
+    });
+    if (!isNearby) {
+      delete PRELOADED_IMAGES[src];
+    }
+  });
+}
+
 function setActiveImage(index) {
   if (!activeProject) return;
   if (index < 0 || index >= activeProject.images.length) return;
@@ -880,28 +923,21 @@ function setActiveImage(index) {
 
   if (activeImgEl) {
     const newSrc = activeProject.images[index].filePath;
-    const tempImg = new Image();
-    tempImg.src = newSrc;
-    tempImg.decoding = "async";
     
-    tempImg.decode().then(() => {
-      activeImgEl.classList.remove("loaded");
-      setTimeout(() => {
-        activeImgEl.src = newSrc;
+    // Preload adjacent images immediately
+    preloadNearbyImages(index);
+    
+    activeImgEl.classList.remove("loaded");
+    setTimeout(() => {
+      activeImgEl.src = newSrc;
+      if (activeImgEl.complete) {
         activeImgEl.classList.add("loaded");
-      }, 100);
-    }).catch(() => {
-      activeImgEl.classList.remove("loaded");
-      setTimeout(() => {
-        activeImgEl.src = newSrc;
+      } else {
         activeImgEl.onload = () => {
           activeImgEl.classList.add("loaded");
         };
-        if (activeImgEl.complete) {
-          activeImgEl.classList.add("loaded");
-        }
-      }, 100);
-    });
+      }
+    }, 80);
   }
 
   thumbs.forEach(thumb => {
@@ -1003,27 +1039,19 @@ function lazyLoadProjectImages() {
       if (entry.isIntersecting) {
         const img = entry.target;
         if (img.dataset.src) {
-          const tempImg = new Image();
-          tempImg.src = img.dataset.src;
-          tempImg.decoding = "async";
-          tempImg.decode().then(() => {
-            img.src = tempImg.src;
+          img.src = img.dataset.src;
+          img.onload = () => {
             img.classList.add("loaded");
-          }).catch(() => {
-            img.src = img.dataset.src;
-            img.onload = () => {
-              img.classList.add("loaded");
-            };
-            if (img.complete) {
-              img.classList.add("loaded");
-            }
-          });
+          };
+          if (img.complete) {
+            img.classList.add("loaded");
+          }
           img.removeAttribute("data-src");
         }
         obs.unobserve(img);
       }
     });
-  }, { rootMargin: "150px" });
+  }, { rootMargin: "400px" });
 
   document.querySelectorAll(".project-img[data-src]").forEach((img) => {
     observer.observe(img);
