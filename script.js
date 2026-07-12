@@ -636,7 +636,7 @@ function initVideosShowcase() {
           const v = card.querySelector(".portfolio-video");
           if (v) {
             v.pause();
-            v.currentTime = 0;
+            v.currentTime = 0.1;
           }
         }, { passive: true });
       }
@@ -644,6 +644,17 @@ function initVideosShowcase() {
 
     grid.appendChild(card);
     observeElementForReveal(card);
+
+    // Skip black first frame by seeking to 0.1s once metadata loads
+    const v = card.querySelector(".portfolio-video");
+    if (v) {
+      v.addEventListener("loadedmetadata", () => {
+        v.currentTime = 0.1;
+      }, { once: true, passive: true });
+      if (v.readyState >= 1) {
+        v.currentTime = 0.1;
+      }
+    }
   });
 
   // Dynamic video buffering upgrade when approaching the viewport (Adaptive rootMargin)
