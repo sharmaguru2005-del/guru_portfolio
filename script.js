@@ -1254,7 +1254,6 @@ function initMagneticButtons() {
    12. Fullscreen Video Player Modal Controls
    ----------------------------------------------- */
 let currentModalVideoSrc = ""; // Global variable to store original video source for retries
-let modalIsOpening = false; // Flag to identify when modal is opening to trigger play inside single-attach listeners
 
 function initVideoModalListeners() {
   const player = document.getElementById("videoModalPlayer");
@@ -1262,27 +1261,13 @@ function initVideoModalListeners() {
   const errorContainer = document.getElementById("videoModalError");
   if (!player) return;
 
-  const handleReady = async () => {
+  const handleReady = () => {
     player.style.opacity = "1";
     if (spinner) spinner.classList.remove("active");
-
-    // Seek and play only once on initial load metadata resolution
-    if (modalIsOpening) {
-      modalIsOpening = false;
-      player.currentTime = 0; // Seek safely now that metadata is loaded
-      try {
-        await player.play();
-      } catch (err) {
-        console.warn("Autoplay blocked or aborted. Controls remain visible.", err);
-      }
-    }
   };
 
-  // Spinner disappears on loadeddata, canplay, or playing
   player.addEventListener("loadedmetadata", handleReady);
-  player.addEventListener("loadeddata", handleReady);
   player.addEventListener("canplay", handleReady);
-  player.addEventListener("playing", handleReady);
 
   // Error handling shows message and Retry button
   const handleError = () => {
@@ -1313,15 +1298,15 @@ async function retryVideoPlayback() {
   const errorContainer = document.getElementById("videoModalError");
   if (!player) return;
 
-  modalIsOpening = true;
-
   if (spinner) spinner.classList.add("active");
   if (errorContainer) errorContainer.style.display = "none";
   player.style.opacity = "0";
 
-  player.pause();
-  player.src = currentModalVideoSrc;
-  player.load();
+  try {
+    await player.play();
+  } catch (err) {
+    console.warn("Retry play failed:", err);
+  }
 }
 
 async function openVideoModal(videoSrc) {
@@ -1332,7 +1317,6 @@ async function openVideoModal(videoSrc) {
   if (!modal || !player) return;
 
   currentModalVideoSrc = videoSrc;
-  modalIsOpening = true;
 
   modal.classList.add("active");
   document.body.classList.add("lock-scroll");
@@ -1342,13 +1326,21 @@ async function openVideoModal(videoSrc) {
   if (errorContainer) errorContainer.style.display = "none";
   player.style.opacity = "0";
 
-  // Strict sequence execution as requested (no removeAttribute or duplicate load, no dynamic preload change)
+  // Simple HTML5 Open Sequence
   player.pause();
-  player.src = videoSrc;
-  player.load();
-  player.playsInline = true;
-  player.controls = true;
-  player.muted = false;
+
+  const absoluteSrc = new URL(videoSrc, window.location.href).href;
+  if (player.src !== absoluteSrc) {
+    player.src = absoluteSrc;
+  }
+
+  player.preload = "metadata";
+
+  try {
+    await player.play();
+  } catch (err) {
+    console.warn("Playback block captured:", err);
+  }
 }
 
 function closeVideoModal() {
@@ -1358,26 +1350,18 @@ function closeVideoModal() {
   const errorContainer = document.getElementById("videoModalError");
   if (!modal || !player) return;
 
+  // Simple HTML5 Close Sequence
   player.pause();
+  player.currentTime = 0;
   
   if (spinner) spinner.classList.remove("active");
   if (errorContainer) errorContainer.style.display = "none";
   
-  player.currentTime = 0;
   player.classList.remove("playing");
   player.style.opacity = "0";
 
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
-
-  // Do NOT clear src immediately to prevent pipeline decode errors (PIPELINE_ERROR_DECODE)
-  // Let the decoder cool down for 1000ms before removing the source
-  setTimeout(() => {
-    if (player.paused) {
-      player.removeAttribute("src");
-      player.load();
-    }
-  }, 1000);
 }
 
 /* -----------------------------------------------
