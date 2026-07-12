@@ -54,7 +54,7 @@ function processVideosDatabase() {
       video.title = enhancement.title;
       video.locked = videosUnlocked ? false : enhancement.locked;
       video.isHorizontal = enhancement.isHorizontal;
-      video.filePath = enhancement.filePath;
+      // Retain the original unencoded database path from images-metadata.js
     } else {
       video.isHorizontal = false;
     }
@@ -1286,16 +1286,58 @@ function openVideoModal(videoSrc) {
     player.addEventListener("loadeddata", handleReady);
     player.addEventListener("canplay", handleReady);
 
-    // Error recovery
+    // Diagnostic logging for all mobile lifecycle events
+    const lifecycleEvents = [
+      "loadstart", "progress", "suspend", "abort", "error", "emptied", 
+      "stalled", "waiting", "loadedmetadata", "loadeddata", "canplay", 
+      "canplaythrough", "playing", "seeking", "seeked"
+    ];
+    const logEvent = (e) => {
+      console.log(`[Video Lifecycle Event: ${e.type}]`, {
+        src: player.src,
+        currentSrc: player.currentSrc,
+        preload: player.preload,
+        readyState: player.readyState,
+        networkState: player.networkState,
+        paused: player.paused,
+        seeking: player.seeking
+      });
+    };
+    lifecycleEvents.forEach(evt => player.addEventListener(evt, logEvent));
+
+    // Error diagnostic display
     const handleError = () => {
+      const err = player.error;
+      const details = {
+        src: player.src,
+        currentSrc: player.currentSrc,
+        preload: player.preload,
+        readyState: player.readyState,
+        networkState: player.networkState,
+        errorCode: err ? err.code : "N/A",
+        errorMessage: err ? err.message : "N/A"
+      };
+      
+      console.error("Fullscreen Video Error Details:", details);
+      
       if (spinner) spinner.classList.remove("active");
-      if (errorContainer) errorContainer.style.display = "flex";
+      if (errorContainer) {
+        errorContainer.style.display = "flex";
+        errorContainer.innerHTML = `
+          <p style="margin-bottom: 0.5rem; font-weight: bold; color: #ff5555;">Unable to load video. Please try again.</p>
+          <p style="font-size: 0.8rem; opacity: 0.8; word-break: break-all; margin-bottom: 0.2rem;">URL: ${details.src}</p>
+          <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 0.2rem;">Preload: ${details.preload} | ReadyState: ${details.readyState} | NetworkState: ${details.networkState}</p>
+          <p style="font-size: 0.8rem; opacity: 0.8; color: #ff8888;">Error Code: ${details.errorCode} | ${details.errorMessage}</p>
+        `;
+      }
       player.style.opacity = "0";
+      
+      lifecycleEvents.forEach(evt => player.removeEventListener(evt, logEvent));
       player.removeEventListener("error", handleError);
     };
     player.addEventListener("error", handleError);
 
-    // Swapping the source exactly once
+    // Swap the source exactly once
     player.src = videoSrc;
     player.muted = false; // Allow sound on mobile modal
     player.loop = true;
