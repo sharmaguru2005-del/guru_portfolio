@@ -123,7 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
     videoModal.addEventListener("click", (e) => {
       if (e.target === videoModal) closeVideoModal();
     });
-    initVideoModalListeners();
   }
 
   // Password Unlock system event bindings
@@ -564,15 +563,6 @@ function initCardTilt() {
 /* -----------------------------------------------
    7. AI Video Showcase
    ----------------------------------------------- */
-// Global slow connection utility check
-function isSlowConnection() {
-  if (navigator.connection) {
-    const conn = navigator.connection;
-    return conn.saveData || /^(2g|3g|slow-2g)/.test(conn.effectiveType || '');
-  }
-  return false;
-}
-
 function initVideosShowcase() {
   const grid = document.getElementById("videoGrid");
   if (!grid) return;
@@ -584,46 +574,34 @@ function initVideosShowcase() {
     return (a.locked === b.locked) ? 0 : a.locked ? 1 : -1;
   });
 
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const disablePreviews = isSlowConnection();
-
+  let unlockedVideoIndex = 0;
   PORTFOLIO_VIDEOS.forEach((video) => {
     const card = document.createElement("div");
     card.className = `video-card reveal-fade-up ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
     card.style.setProperty("--project-hover-accent", "var(--theme-skincare)");
     card.setAttribute("tabindex", "0");
 
-    let videoHtml = "";
-    if (video.locked) {
-      videoHtml = `
-        <div class="thumbnail-wrapper">
-          <div class="lock-overlay">
-            <span class="lock-icon">🔒</span>
-            <span class="lock-title">Locked Showcase</span>
-            <span class="lock-subtitle">Enter the access password or contact Gurunarayan to unlock.</span>
-          </div>
-        </div>
-      `;
-    } else {
-      if (isMobile) {
-        // Mobile: preload="none", playsinline, muted, do NOT autoplay, show placeholder with spinner
-        videoHtml = `
-          <div class="video-loading-placeholder">
-            <div class="spinner-ring small"></div>
-          </div>
-          <video class="portfolio-video" src="${video.filePath}" preload="none" muted playsinline style="opacity: 0;"></video>
-        `;
-      } else {
-        // Desktop: preload="metadata", muted, playsinline, loop, no autoplay
-        videoHtml = `
-          <video class="portfolio-video" src="${video.filePath}" preload="metadata" muted playsinline loop></video>
-        `;
+    let preloadAttr = "metadata";
+    if (!video.locked) {
+      if (unlockedVideoIndex === 0) {
+        preloadAttr = "auto";
       }
+      unlockedVideoIndex++;
     }
 
     card.innerHTML = `
       <div class="video-preview-container">
-        ${videoHtml}
+        ${video.locked ? `
+          <div class="thumbnail-wrapper">
+            <div class="lock-overlay">
+              <span class="lock-icon">🔒</span>
+              <span class="lock-title">Locked Showcase</span>
+              <span class="lock-subtitle">Enter the access password or contact Gurunarayan to unlock.</span>
+            </div>
+          </div>
+        ` : `
+          <video class="portfolio-video" src="${video.filePath}" preload="${preloadAttr}" muted loop playsinline></video>
+        `}
       </div>
       <div class="video-info">
         <div class="project-accent-line"></div>
@@ -653,8 +631,8 @@ function initVideosShowcase() {
       });
       card.style.cursor = "pointer";
 
-      // Hover controls for desktop preview loops (only for fine pointer devices when previews are enabled)
-      if (!isMobile && !disablePreviews && window.matchMedia("(pointer: fine)").matches) {
+      // Hover controls for desktop preview Loops (only for pointer: fine devices)
+      if (window.matchMedia("(pointer: fine)").matches) {
         card.addEventListener("mouseenter", () => {
           const v = card.querySelector(".portfolio-video");
           if (v) v.play().catch(() => {});
@@ -672,24 +650,9 @@ function initVideosShowcase() {
     grid.appendChild(card);
     observeElementForReveal(card);
 
-    // Mobile: Wait for loadeddata/canplay before fading in the video and hiding placeholder
+    // Skip black first frame by seeking to 0.1s once metadata loads
     const v = card.querySelector(".portfolio-video");
     if (v) {
-      if (isMobile) {
-        const handleVideoReady = () => {
-          v.style.opacity = "1";
-          const placeholder = card.querySelector(".video-loading-placeholder");
-          if (placeholder) placeholder.style.display = "none";
-          v.removeEventListener("loadeddata", handleVideoReady);
-          v.removeEventListener("canplay", handleVideoReady);
-        };
-        v.addEventListener("loadeddata", handleVideoReady);
-        v.addEventListener("canplay", handleVideoReady);
-        if (v.readyState >= 2) {
-          handleVideoReady();
-        }
-      }
-
       v.addEventListener("loadedmetadata", () => {
         v.currentTime = 0.1;
       }, { once: true, passive: true });
@@ -699,21 +662,30 @@ function initVideosShowcase() {
     }
   });
 
-  // Mobile preloading upgrade via IntersectionObserver:
-  // Upgrade preload to "metadata" only once when entering viewport, never downgrade.
-  if (isMobile && "IntersectionObserver" in window) {
-    const videoObserver = new IntersectionObserver((entries) => {
+  // Dynamic video buffering upgrade when approaching the viewport (Adaptive rootMargin)
+  if ("IntersectionObserver" in window) {
+    let margin = "300px";
+    if (navigator.connection) {
+      const conn = navigator.connection;
+      const isSlow = conn.saveData || /^(2g|3g)/.test(conn.effectiveType || '');
+      if (isSlow) {
+        margin = "100px"; // Delay buffering until closer on slow connections
+      }
+    }
+
+    const videoObserver = new IntersectionObserver((entries, obs) => {
       entries.forEach(entry => {
-        const video = entry.target;
         if (entry.isIntersecting) {
-          if (video.getAttribute("preload") === "none") {
-            video.setAttribute("preload", "metadata");
+          const video = entry.target;
+          if (video.getAttribute("preload") !== "auto") {
+            video.setAttribute("preload", "auto");
           }
+          obs.unobserve(video);
         }
       });
-    }, { rootMargin: "300px" });
+    }, { rootMargin: margin });
 
-    grid.querySelectorAll(".portfolio-video").forEach(video => {
+    grid.querySelectorAll(".portfolio-video[preload='metadata']").forEach(video => {
       videoObserver.observe(video);
     });
   }
@@ -1253,113 +1225,26 @@ function initMagneticButtons() {
 /* -----------------------------------------------
    12. Fullscreen Video Player Modal Controls
    ----------------------------------------------- */
-let currentModalVideoSrc = ""; // Global variable to store original video source for retries
-
-function initVideoModalListeners() {
-  const player = document.getElementById("videoModalPlayer");
-  const spinner = document.getElementById("videoModalSpinner");
-  const errorContainer = document.getElementById("videoModalError");
-  if (!player) return;
-
-  const handleReady = () => {
-    player.style.opacity = "1";
-    if (spinner) spinner.classList.remove("active");
-  };
-
-  player.addEventListener("loadedmetadata", handleReady);
-  player.addEventListener("canplay", handleReady);
-
-  // Error handling shows message and Retry button
-  const handleError = () => {
-    if (spinner) spinner.classList.remove("active");
-    player.style.opacity = "0";
-    if (errorContainer) {
-      errorContainer.style.display = "flex";
-      errorContainer.innerHTML = `
-        <p style="margin-bottom: 0.75rem; font-weight: bold; color: #ff5555;">Unable to load video.</p>
-        <button id="videoModalRetryBtn" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.8rem; min-height: auto; width: auto; max-width: 120px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px;">Retry</button>
-      `;
-      const retryBtn = document.getElementById("videoModalRetryBtn");
-      if (retryBtn) {
-        retryBtn.onclick = (e) => {
-          e.stopPropagation();
-          retryVideoPlayback();
-        };
-      }
-    }
-  };
-
-  player.addEventListener("error", handleError);
-}
-
-async function retryVideoPlayback() {
-  const player = document.getElementById("videoModalPlayer");
-  const spinner = document.getElementById("videoModalSpinner");
-  const errorContainer = document.getElementById("videoModalError");
-  if (!player) return;
-
-  if (spinner) spinner.classList.add("active");
-  if (errorContainer) errorContainer.style.display = "none";
-  player.style.opacity = "0";
-
-  try {
-    await player.play();
-  } catch (err) {
-    console.warn("Retry play failed:", err);
-  }
-}
-
-async function openVideoModal(videoSrc) {
+function openVideoModal(videoSrc) {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
-  const spinner = document.getElementById("videoModalSpinner");
-  const errorContainer = document.getElementById("videoModalError");
   if (!modal || !player) return;
 
-  currentModalVideoSrc = videoSrc;
-
+  player.src = videoSrc;
+  player.muted = true;
+  player.loop = true;
   modal.classList.add("active");
   document.body.classList.add("lock-scroll");
-
-  // Spinner appears only after opening
-  if (spinner) spinner.classList.add("active");
-  if (errorContainer) errorContainer.style.display = "none";
-  player.style.opacity = "0";
-
-  // Simple HTML5 Open Sequence
-  player.pause();
-
-  const absoluteSrc = new URL(videoSrc, window.location.href).href;
-  if (player.src !== absoluteSrc) {
-    player.src = absoluteSrc;
-  }
-
-  player.preload = "metadata";
-
-  try {
-    await player.play();
-  } catch (err) {
-    console.warn("Playback block captured:", err);
-  }
+  player.play().catch(() => {});
 }
 
 function closeVideoModal() {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
-  const spinner = document.getElementById("videoModalSpinner");
-  const errorContainer = document.getElementById("videoModalError");
   if (!modal || !player) return;
 
-  // Simple HTML5 Close Sequence
   player.pause();
-  player.currentTime = 0;
-  
-  if (spinner) spinner.classList.remove("active");
-  if (errorContainer) errorContainer.style.display = "none";
-  
-  player.classList.remove("playing");
-  player.style.opacity = "0";
-
+  player.src = "";
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
 }
