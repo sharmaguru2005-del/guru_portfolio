@@ -665,12 +665,12 @@ function initVideosShowcase() {
           v.style.opacity = "1";
           const placeholder = card.querySelector(".video-loading-placeholder");
           if (placeholder) placeholder.style.display = "none";
-          v.removeEventListener("playing", handleVideoReady);
-          v.removeEventListener("timeupdate", handleVideoReady);
+          v.removeEventListener("loadeddata", handleVideoReady);
+          v.removeEventListener("canplay", handleVideoReady);
         };
-        v.addEventListener("playing", handleVideoReady, { once: true });
-        v.addEventListener("timeupdate", handleVideoReady, { once: true });
-        if (v.readyState >= 3) {
+        v.addEventListener("loadeddata", handleVideoReady);
+        v.addEventListener("canplay", handleVideoReady);
+        if (v.readyState >= 2) {
           handleVideoReady();
         }
       }
@@ -1271,104 +1271,40 @@ function openVideoModal(videoSrc) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   if (isMobile) {
+    // Mobile specific: show spinner, hide video, hide error overlay
     if (spinner) spinner.classList.add("active");
     if (errorContainer) errorContainer.style.display = "none";
     player.style.opacity = "0";
 
-    let stalledTimeout = null;
-    let hasFailed = false;
+    const handleReady = () => {
+      player.style.opacity = "1";
+      if (spinner) spinner.classList.remove("active");
+      player.removeEventListener("loadeddata", handleReady);
+      player.removeEventListener("canplay", handleReady);
+    };
 
-    const showError = () => {
-      if (hasFailed) return;
-      hasFailed = true;
+    player.addEventListener("loadeddata", handleReady);
+    player.addEventListener("canplay", handleReady);
+
+    // Error recovery
+    const handleError = () => {
       if (spinner) spinner.classList.remove("active");
       if (errorContainer) errorContainer.style.display = "flex";
       player.style.opacity = "0";
-      cleanup();
+      player.removeEventListener("error", handleError);
     };
+    player.addEventListener("error", handleError);
 
-    const startStalledTimeout = () => {
-      if (stalledTimeout) clearTimeout(stalledTimeout);
-      stalledTimeout = setTimeout(() => {
-        showError();
-      }, 6000);
-    };
-
-    const clearStalledTimeout = () => {
-      if (stalledTimeout) {
-        clearTimeout(stalledTimeout);
-        stalledTimeout = null;
-      }
-    };
-
-    const startPlay = () => {
-      clearStalledTimeout();
-      player.play()
-        .then(() => {
-          player.style.opacity = "1";
-          if (spinner) spinner.classList.remove("active");
-          cleanup();
-        })
-        .catch((err) => {
-          console.warn("Autoplay blocked on mobile, waiting for tap:", err);
-          const retryPlay = () => {
-            player.play().then(() => {
-              player.style.opacity = "1";
-              if (spinner) spinner.classList.remove("active");
-              document.removeEventListener("touchstart", retryPlay);
-              document.removeEventListener("click", retryPlay);
-            }).catch(() => {
-              showError();
-            });
-          };
-          document.addEventListener("touchstart", retryPlay, { passive: true });
-          document.addEventListener("click", retryPlay, { passive: true });
-        });
-    };
-
-    const handleCanPlay = () => {
-      startPlay();
-    };
-
-    const handlePlaying = () => {
-      clearStalledTimeout();
-      player.style.opacity = "1";
-      if (spinner) spinner.classList.remove("active");
-    };
-
-    const handleWaiting = () => {
-      startStalledTimeout();
-    };
-
-    const handleStalled = () => {
-      startStalledTimeout();
-    };
-
-    const handleTerminalError = () => {
-      showError();
-    };
-
-    const cleanup = () => {
-      clearStalledTimeout();
-      player.removeEventListener("canplay", handleCanPlay);
-      player.removeEventListener("playing", handlePlaying);
-      player.removeEventListener("waiting", handleWaiting);
-      player.removeEventListener("stalled", handleStalled);
-      player.removeEventListener("error", handleTerminalError);
-      player.removeEventListener("abort", handleTerminalError);
-    };
-
-    player.addEventListener("canplay", handleCanPlay);
-    player.addEventListener("playing", handlePlaying);
-    player.addEventListener("waiting", handleWaiting);
-    player.addEventListener("stalled", handleStalled);
-    player.addEventListener("error", handleTerminalError);
-    player.addEventListener("abort", handleTerminalError);
-
+    // Swapping the source exactly once
     player.src = videoSrc;
-    player.muted = false;
+    player.muted = false; // Allow sound on mobile modal
     player.loop = true;
-    player.load();
+
+    // Direct playback invocation in same user activation tick
+    player.play().catch((err) => {
+      console.warn("Autoplay blocked on mobile, showing player controls:", err);
+      handleReady();
+    });
   } else {
     // Desktop: keep the exact same original behaviour!
     if (spinner) spinner.classList.remove("active");
@@ -1389,8 +1325,7 @@ function closeVideoModal() {
   if (!modal || !player) return;
 
   player.pause();
-  player.removeAttribute("src");
-  player.load();
+  player.removeAttribute("src"); // Clear source and release memory
   
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
