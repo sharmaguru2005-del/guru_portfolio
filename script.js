@@ -589,6 +589,8 @@ function initVideosShowcase() {
       unlockedVideoIndex++;
     }
 
+    const isMobileVideo = window.matchMedia("(max-width: 768px)").matches;
+
     card.innerHTML = `
       <div class="video-preview-container">
         ${video.locked ? `
@@ -599,9 +601,14 @@ function initVideosShowcase() {
               <span class="lock-subtitle">Enter the access password or contact Gurunarayan to unlock.</span>
             </div>
           </div>
+        ` : (isMobileVideo ? `
+          <div class="video-loading-placeholder">
+            <div class="spinner-ring small"></div>
+          </div>
+          <video class="portfolio-video" src="${video.filePath}" preload="${preloadAttr}" muted loop playsinline style="opacity: 0;"></video>
         ` : `
           <video class="portfolio-video" src="${video.filePath}" preload="${preloadAttr}" muted loop playsinline></video>
-        `}
+        `)}
       </div>
       <div class="video-info">
         <div class="project-accent-line"></div>
@@ -653,6 +660,19 @@ function initVideosShowcase() {
     // Skip black first frame by seeking to 0.1s once metadata loads
     const v = card.querySelector(".portfolio-video");
     if (v) {
+      if (isMobileVideo) {
+        const handleVideoReady = () => {
+          v.style.opacity = "1";
+          const placeholder = card.querySelector(".video-loading-placeholder");
+          if (placeholder) placeholder.style.display = "none";
+        };
+        v.addEventListener("playing", handleVideoReady, { once: true });
+        v.addEventListener("timeupdate", handleVideoReady, { once: true });
+        if (v.readyState >= 3) {
+          handleVideoReady();
+        }
+      }
+
       v.addEventListener("loadedmetadata", () => {
         v.currentTime = 0.1;
       }, { once: true, passive: true });
@@ -1239,25 +1259,96 @@ function initMagneticButtons() {
 function openVideoModal(videoSrc) {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
+  const spinner = document.getElementById("videoModalSpinner");
   if (!modal || !player) return;
 
-  player.src = videoSrc;
-  player.muted = true;
-  player.loop = true;
   modal.classList.add("active");
   document.body.classList.add("lock-scroll");
-  player.play().catch(() => {});
+
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+  if (isMobile) {
+    // Mobile specific: show spinner, hide video initially
+    if (spinner) spinner.classList.add("active");
+    player.style.opacity = "0";
+
+    const startPlay = () => {
+      player.play()
+        .then(() => {
+          player.style.opacity = "1";
+          if (spinner) spinner.classList.remove("active");
+        })
+        .catch((err) => {
+          console.warn("Autoplay blocked on mobile, waiting for tap to retry:", err);
+          const retryPlay = () => {
+            player.play().then(() => {
+              player.style.opacity = "1";
+              if (spinner) spinner.classList.remove("active");
+              document.removeEventListener("touchstart", retryPlay);
+              document.removeEventListener("click", retryPlay);
+            });
+          };
+          document.addEventListener("touchstart", retryPlay, { passive: true });
+          document.addEventListener("click", retryPlay, { passive: true });
+        });
+      cleanup();
+    };
+
+    const handleError = () => {
+      console.warn("Mobile video loading failed, retrying once...");
+      player.load();
+      player.play()
+        .then(() => {
+          player.style.opacity = "1";
+          if (spinner) spinner.classList.remove("active");
+        })
+        .catch(() => {
+          player.style.opacity = "1";
+          if (spinner) spinner.classList.remove("active");
+        });
+      cleanup();
+    };
+
+    const cleanup = () => {
+      player.removeEventListener("canplay", startPlay);
+      player.removeEventListener("error", handleError);
+    };
+
+    player.addEventListener("canplay", startPlay);
+    player.addEventListener("error", handleError);
+
+    player.src = videoSrc;
+    player.muted = false; // Allow sound on mobile modal
+    player.loop = true;
+    player.load(); // Call video.load() before play()
+  } else {
+    // Desktop: keep the exact same original behaviour!
+    player.src = videoSrc;
+    player.muted = true;
+    player.loop = true;
+    player.style.opacity = "1";
+    if (spinner) spinner.classList.remove("active");
+    player.play().catch(() => {});
+  }
 }
 
 function closeVideoModal() {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
+  const spinner = document.getElementById("videoModalSpinner");
   if (!modal || !player) return;
 
   player.pause();
-  player.src = "";
+  
+  // Release decoder resources on close
+  player.removeAttribute("src");
+  player.load();
+  
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
+  
+  if (spinner) spinner.classList.remove("active");
+  player.style.opacity = "0";
 }
 
 /* -----------------------------------------------
