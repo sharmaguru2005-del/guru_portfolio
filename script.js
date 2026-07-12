@@ -1292,7 +1292,6 @@ function initVideoModalListeners() {
   };
 
   player.addEventListener("error", handleError);
-  player.addEventListener("abort", handleError);
 }
 
 async function retryVideoPlayback() {
@@ -1306,10 +1305,7 @@ async function retryVideoPlayback() {
   player.style.opacity = "0";
 
   player.pause();
-  player.removeAttribute("src");
-  player.load();
   player.src = currentModalVideoSrc;
-  player.preload = "auto";
   player.load();
   try {
     await player.play();
@@ -1335,10 +1331,8 @@ async function openVideoModal(videoSrc) {
   if (errorContainer) errorContainer.style.display = "none";
   player.style.opacity = "0";
 
-  // Strict sequence execution as requested
+  // Strict sequence execution as requested (no removeAttribute or duplicate load)
   player.pause();
-  player.removeAttribute("src");
-  player.load();
   player.src = videoSrc;
   player.preload = "auto";
   player.load();
@@ -1365,7 +1359,7 @@ function closeVideoModal() {
   if (!modal || !player) return;
 
   player.pause();
-  player.removeAttribute("src");
+  player.removeAttribute("src"); // Clear source and release memory (only on close!)
   player.load();
   
   if (spinner) spinner.classList.remove("active");
