@@ -495,8 +495,8 @@ const PORTFOLIO_PROJECTS = [
         "images":  [
                        {
                            "width":  1086,
-                           "filePath":  "./Design%20Creatives/RYDR/rydr.png",
-                           "name":  "rydr.png",
+                           "filePath":  "./Design%20Creatives/RYDR/img%20rydr.png",
+                           "name":  "img rydr.png",
                            "aspectRatio":  0.75,
                            "height":  1448
                        },

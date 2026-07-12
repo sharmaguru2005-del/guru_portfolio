@@ -11,7 +11,10 @@ let currentImageIndex = 0;
 let activeProject = null;
 let touchStartX = 0;
 let touchEndX = 0;
+let touchStartY = 0;
+let touchEndY = 0;
 let lastWheelTime = 0;
+let activeTransitionId = 0;
 let videosUnlocked = false;
 
 // Permanent project ordering mapping
@@ -77,21 +80,34 @@ document.addEventListener("DOMContentLoaded", () => {
     lastClickY = e.clientY;
   });
 
-  // Global keydown listener for subpage gallery cycling
+  // Global keydown listener for subpage gallery cycling and modal closures
   document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const videoModal = document.getElementById("videoModal");
+      if (videoModal && videoModal.classList.contains("active")) {
+        closeVideoModal();
+        e.preventDefault();
+        return;
+      }
+      if (activeProject) {
+        window.location.hash = "";
+        e.preventDefault();
+        return;
+      }
+    }
+
     if (!activeProject) return;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    if (e.key === "ArrowRight") {
       navigateGallery(1);
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    } else if (e.key === "ArrowLeft") {
       navigateGallery(-1);
-    } else if (e.key === "Escape") {
-      window.location.hash = "";
     }
   });
 
   initLoader();
   initCustomCursor();
   initRevealAnimations();
+  initSubtleParallax();
   initActiveNavHighlight();
   initPortfolioMaster();
   initVideosShowcase();
@@ -227,15 +243,49 @@ function attachCursorHoverListeners() {
 /* -----------------------------------------------
    3. IntersectionObserver Reveal & Active Scroll Highlighting
    ----------------------------------------------- */
+let revealObserver = null;
+
+function observeElementForReveal(el) {
+  if (revealObserver) {
+    revealObserver.observe(el);
+  }
+}
+
 function initRevealAnimations() {
   const reveals = document.querySelectorAll(".reveal-fade-up");
-  const revealObserver = new IntersectionObserver((entries, observer) => {
+  
+  let intersectQueue = [];
+  let timeoutId = null;
+
+  revealObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        entry.target.classList.add("active");
+        intersectQueue.push(entry.target);
         observer.unobserve(entry.target);
       }
     });
+
+    if (intersectQueue.length > 0) {
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      timeoutId = setTimeout(() => {
+        const queue = [...intersectQueue];
+        intersectQueue = [];
+        
+        queue.forEach((el, index) => {
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              el.style.willChange = "opacity, transform, filter";
+              el.classList.add("active");
+              
+              setTimeout(() => {
+                el.style.willChange = "";
+              }, 750);
+            });
+          }, index * 70);
+        });
+      }, 30);
+    }
   }, {
     threshold: 0.05,
     rootMargin: "0px 0px -50px 0px"
@@ -251,7 +301,7 @@ function initRevealAnimations() {
     } else {
       header.classList.remove("scrolled");
     }
-  });
+  }, { passive: true });
 
   // Mobile menu toggle
   const menuToggle = document.getElementById("menuToggle");
@@ -268,6 +318,25 @@ function initRevealAnimations() {
       });
     });
   }
+}
+
+function initSubtleParallax() {
+  const parallaxEl = document.querySelector(".abstract-geometry");
+  if (!parallaxEl) return;
+
+  let ticking = false;
+
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        const offset = Math.min(20, Math.max(-20, scrollY * 0.04));
+        parallaxEl.style.transform = `translate3d(0, ${offset}px, 0)`;
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
 }
 
 function initActiveNavHighlight() {
@@ -387,6 +456,7 @@ function initPortfolioMaster() {
 
       const card = createProjectCardElement(project);
       targetCol.el.appendChild(card);
+      observeElementForReveal(card);
       targetCol.height += normHeight;
     });
 
@@ -407,7 +477,7 @@ function initPortfolioMaster() {
    ----------------------------------------------- */
 function createProjectCardElement(project) {
   const card = document.createElement("div");
-  card.className = "project-card";
+  card.className = "project-card reveal-fade-up";
   card.style.setProperty("--project-hover-accent", `var(--theme-${project.theme})`);
   card.setAttribute("data-name", project.id);
   card.setAttribute("tabindex", "0");
@@ -494,25 +564,30 @@ function initVideosShowcase() {
 
   grid.innerHTML = "";
 
-  // Sort: unlocked first (locked === false comes before locked === true)
+  // Sort: Unlocked showcase first, then Locked campaigns
   PORTFOLIO_VIDEOS.sort((a, b) => {
-    if (a.locked === b.locked) return 0;
-    return a.locked ? 1 : -1;
+    return (a.locked === b.locked) ? 0 : a.locked ? 1 : -1;
   });
 
+  let unlockedVideoIndex = 0;
   PORTFOLIO_VIDEOS.forEach((video) => {
     const card = document.createElement("div");
-    card.className = `video-card ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
+    card.className = `video-card reveal-fade-up ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
     card.style.setProperty("--project-hover-accent", "var(--theme-skincare)");
     card.setAttribute("tabindex", "0");
 
-    const thumbId = `thumb-${video.name.replace(/[^a-zA-Z0-9]/g, "-")}`;
+    let preloadAttr = "metadata";
+    if (!video.locked) {
+      if (unlockedVideoIndex === 0) {
+        preloadAttr = "auto";
+      }
+      unlockedVideoIndex++;
+    }
 
     card.innerHTML = `
       <div class="video-preview-container">
         ${video.locked ? `
           <div class="thumbnail-wrapper">
-            <img class="video-thumbnail blurred" id="${thumbId}" src="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 9 16%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23222%22/></svg>" alt="${video.title}" />
             <div class="lock-overlay">
               <span class="lock-icon">🔒</span>
               <span class="lock-title">Locked Showcase</span>
@@ -520,7 +595,7 @@ function initVideosShowcase() {
             </div>
           </div>
         ` : `
-          <video class="portfolio-video" src="${video.filePath}" preload="metadata" muted loop playsinline></video>
+          <video class="portfolio-video" src="${video.filePath}" preload="${preloadAttr}" muted loop playsinline></video>
         `}
       </div>
       <div class="video-info">
@@ -531,16 +606,6 @@ function initVideosShowcase() {
     `;
 
     if (video.locked) {
-      // Async frame capture to construct native uncropped B&W blurred overlays
-      setTimeout(() => {
-        captureVideoFrame(video.filePath, (dataUrl) => {
-          if (dataUrl) {
-            const img = document.getElementById(thumbId);
-            if (img) img.src = dataUrl;
-          }
-        });
-      }, 50);
-
       const triggerUnlock = () => openUnlockModal(video);
       card.addEventListener("click", triggerUnlock);
       card.addEventListener("keydown", (e) => {
@@ -566,55 +631,50 @@ function initVideosShowcase() {
         card.addEventListener("mouseenter", () => {
           const v = card.querySelector(".portfolio-video");
           if (v) v.play().catch(() => {});
-        });
+        }, { passive: true });
         card.addEventListener("mouseleave", () => {
           const v = card.querySelector(".portfolio-video");
           if (v) {
             v.pause();
             v.currentTime = 0;
           }
-        });
+        }, { passive: true });
       }
     }
 
     grid.appendChild(card);
+    observeElementForReveal(card);
   });
-}
 
-
-function captureVideoFrame(videoUrl, callback) {
-  const video = document.createElement("video");
-  video.src = videoUrl;
-  video.crossOrigin = "anonymous";
-  video.muted = true;
-  video.playsInline = true;
-  video.preload = "auto";
-  
-  // Seek 0.5s to capture clear branding/colors
-  video.currentTime = 0.5;
-
-  video.addEventListener("seeked", () => {
-    try {
-      const canvas = document.createElement("canvas");
-      // Use original video frame width and height to prevent stretching thumbnails
-      canvas.width = video.videoWidth || 360;
-      canvas.height = video.videoHeight || 640;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg");
-      callback(dataUrl);
-      
-      video.src = "";
-      video.load();
-    } catch (e) {
-      callback(null);
+  // Dynamic video buffering upgrade when approaching the viewport (Adaptive rootMargin)
+  if ("IntersectionObserver" in window) {
+    let margin = "300px";
+    if (navigator.connection) {
+      const conn = navigator.connection;
+      const isSlow = conn.saveData || /^(2g|3g)/.test(conn.effectiveType || '');
+      if (isSlow) {
+        margin = "100px"; // Delay buffering until closer on slow connections
+      }
     }
-  });
 
-  video.addEventListener("error", () => {
-    callback(null);
-  });
+    const videoObserver = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const video = entry.target;
+          if (video.getAttribute("preload") !== "auto") {
+            video.setAttribute("preload", "auto");
+          }
+          obs.unobserve(video);
+        }
+      });
+    }, { rootMargin: margin });
+
+    grid.querySelectorAll(".portfolio-video[preload='metadata']").forEach(video => {
+      videoObserver.observe(video);
+    });
+  }
 }
+
 
 /* -----------------------------------------------
    8. Premium Unlock Modal
@@ -726,7 +786,7 @@ function renderProjectPageContent(project) {
   activeProject = project;
   currentImageIndex = 0;
   
-  // Preload first batch of nearby images immediately in the background
+  // Preload first batch of nearby images immediately in the background (Network-Adaptive)
   preloadNearbyImages(0);
   
   const overlay = document.getElementById("projectPageView");
@@ -754,6 +814,22 @@ function renderProjectPageContent(project) {
         <!-- Left Side: Uncropped Active Image Container & Thumbnail filmstrip -->
         <div class="gallery-main-area">
           <div class="main-preview-container" id="galleryContainer">
+            <!-- Premium Floating Glass Gallery Navigation Buttons (Scoped Inside Container) -->
+            ${project.images.length > 1 ? `
+              <button class="gallery-nav-btn prev" aria-label="Previous image" id="galleryPrevBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+              </button>
+              <button class="gallery-nav-btn next" aria-label="Next image" id="galleryNextBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            ` : ''}
+
             <div class="main-preview-slide">
               <img class="main-preview-img" src="${project.images[0].filePath}" width="${project.images[0].width}" height="${project.images[0].height}" alt="${project.title}" id="projectActiveImage" decoding="async" fetchpriority="high" />
             </div>
@@ -807,6 +883,14 @@ function renderProjectPageContent(project) {
     </div>
   `;
 
+  // Bind click event listeners for the circular gallery navigation buttons
+  if (project.images.length > 1) {
+    const prevBtn = overlay.querySelector("#galleryPrevBtn");
+    const nextBtn = overlay.querySelector("#galleryNextBtn");
+    if (prevBtn) prevBtn.addEventListener("click", () => navigateGallery(-1));
+    if (nextBtn) nextBtn.addEventListener("click", () => navigateGallery(1));
+  }
+
   // Bind onload listener for the first visible image
   const firstActiveImg = overlay.querySelector("#projectActiveImage");
   if (firstActiveImg) {
@@ -852,10 +936,12 @@ function renderProjectPageContent(project) {
   if (container) {
     container.addEventListener("touchstart", (e) => {
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
     }, { passive: true });
 
     container.addEventListener("touchend", (e) => {
       touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
       handleSwipeGesture();
     }, { passive: true });
 
@@ -881,13 +967,29 @@ function preloadNearbyImages(index) {
   const images = activeProject.images;
   const len = images.length;
   if (len <= 1) return;
+
+  // Adaptive network preloading
+  let preloadPrev = true;
+  let preloadNext = true;
+
+  if (navigator.connection) {
+    const conn = navigator.connection;
+    const isSlow = conn.saveData || /^(2g|3g)/.test(conn.effectiveType || '');
+    if (isSlow) {
+      preloadPrev = false; // Only preload next image on slow connections to save bandwidth
+    }
+  }
   
-  // Indices to preload: next 2 and previous 1
-  const indicesToPreload = [
-    (index + 1) % len,
-    (index + 2) % len,
-    (index - 1 + len) % len
-  ];
+  const indicesToPreload = [];
+  if (preloadNext) {
+    indicesToPreload.push((index + 1) % len);
+    if (preloadPrev) {
+      indicesToPreload.push((index + 2) % len); // Preload next + 2 on fast networks
+    }
+  }
+  if (preloadPrev) {
+    indicesToPreload.push((index - 1 + len) % len);
+  }
   
   indicesToPreload.forEach(idx => {
     const src = images[idx].filePath;
@@ -895,8 +997,15 @@ function preloadNearbyImages(index) {
       const img = new Image();
       img.src = src;
       img.decoding = "async";
-      img.decode().catch(() => {});
-      PRELOADED_IMAGES[src] = img;
+      img.decode()
+        .then(() => {
+          PRELOADED_IMAGES[src] = true;
+        })
+        .catch(() => {
+          img.onload = () => {
+            PRELOADED_IMAGES[src] = true;
+          };
+        });
     }
   });
   
@@ -918,33 +1027,135 @@ function setActiveImage(index) {
   if (index < 0 || index >= activeProject.images.length) return;
 
   currentImageIndex = index;
-  const activeImgEl = document.getElementById("projectActiveImage");
+  const oldImg = document.getElementById("projectActiveImage");
   const thumbs = document.querySelectorAll(".filmstrip-thumb");
+  const containerSlide = document.querySelector(".main-preview-slide");
 
-  if (activeImgEl) {
+  if (oldImg && containerSlide) {
     const newSrc = activeProject.images[index].filePath;
     
-    // Preload adjacent images immediately
+    // Preload adjacent images immediately (Network-Adaptive)
     preloadNearbyImages(index);
-    
-    activeImgEl.classList.remove("loaded");
-    setTimeout(() => {
-      activeImgEl.src = newSrc;
-      if (activeImgEl.complete) {
-        activeImgEl.classList.add("loaded");
-      } else {
-        activeImgEl.onload = () => {
-          activeImgEl.classList.add("loaded");
+
+    // Track the transaction ID to prevent race conditions when clicking rapidly
+    activeTransitionId++;
+    const transitionId = activeTransitionId;
+
+    const triggerCrossFade = () => {
+      // Ensure we are still the active transition transaction
+      if (transitionId !== activeTransitionId) return;
+
+      const newImg = document.createElement("img");
+      newImg.className = "main-preview-img incoming";
+      newImg.src = newSrc;
+      newImg.width = activeProject.images[index].width;
+      newImg.height = activeProject.images[index].height;
+      newImg.alt = activeProject.title;
+      newImg.decoding = "async";
+      newImg.setAttribute("fetchpriority", "high");
+      newImg.setAttribute("loading", "eager");
+      newImg.style.position = "absolute";
+
+      containerSlide.appendChild(newImg);
+
+      oldImg.id = "";
+      newImg.id = "projectActiveImage";
+
+      // Temporary will-change applied ONLY during active transition to save memory
+      oldImg.style.willChange = "opacity, transform";
+      newImg.style.willChange = "opacity, transform";
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          oldImg.classList.remove("loaded");
+          newImg.classList.remove("incoming");
+          newImg.classList.add("loaded");
+        });
+      });
+
+      setTimeout(() => {
+        if (oldImg && oldImg.parentNode) {
+          oldImg.parentNode.removeChild(oldImg);
+        }
+        newImg.style.position = "";
+        newImg.style.willChange = ""; // Immediately remove will-change!
+      }, 350);
+    };
+
+    // If already in cache (either preloaded or previously loaded), reuse instantly
+    if (PRELOADED_IMAGES[newSrc] === true) {
+      triggerCrossFade();
+    } else {
+      // Create memory image, wait for load AND decode() before starting the transition
+      const tempImg = new Image();
+      tempImg.src = newSrc;
+      tempImg.decoding = "async";
+
+      let attempts = 0;
+      const attemptLoad = () => {
+        tempImg.onload = () => {
+          if (typeof tempImg.decode === "function") {
+            tempImg.decode()
+              .then(() => {
+                if (transitionId === activeTransitionId) {
+                  PRELOADED_IMAGES[newSrc] = true;
+                  triggerCrossFade();
+                }
+              })
+              .catch(() => {
+                // If decode fails/aborted, fall back to onload directly
+                if (transitionId === activeTransitionId) {
+                  PRELOADED_IMAGES[newSrc] = true;
+                  triggerCrossFade();
+                }
+              });
+          } else {
+            if (transitionId === activeTransitionId) {
+              PRELOADED_IMAGES[newSrc] = true;
+              triggerCrossFade();
+            }
+          }
         };
-      }
-    }, 80);
+
+        tempImg.onerror = () => {
+          if (attempts < 1) {
+            attempts++;
+            // Silent retry once
+            setTimeout(() => {
+              tempImg.src = "";
+              tempImg.src = newSrc;
+            }, 100);
+          } else {
+            // Keep displaying the previous image, log silently
+            console.warn("Failed to load design image: " + newSrc);
+          }
+        };
+      };
+
+      attemptLoad();
+    }
+  }
+
+  // Active thumbnail smooth tracking & centering inside the strip
+  const filmstripContainer = document.querySelector(".filmstrip-container");
+  const activeThumb = document.querySelector(`.filmstrip-thumb[data-index="${index}"]`);
+  
+  if (filmstripContainer && activeThumb) {
+    const containerWidth = filmstripContainer.clientWidth;
+    const thumbWidth = activeThumb.clientWidth;
+    const thumbLeft = activeThumb.offsetLeft;
+    const scrollTarget = thumbLeft - (containerWidth / 2) + (thumbWidth / 2);
+    
+    filmstripContainer.scrollTo({
+      left: scrollTarget,
+      behavior: "smooth"
+    });
   }
 
   thumbs.forEach(thumb => {
     const idx = parseInt(thumb.getAttribute("data-index"), 10);
     if (idx === index) {
       thumb.classList.add("active");
-      thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     } else {
       thumb.classList.remove("active");
     }
@@ -963,11 +1174,16 @@ function navigateGallery(direction) {
 }
 
 function handleSwipeGesture() {
-  const delta = touchEndX - touchStartX;
-  if (delta < -50) {
-    navigateGallery(1);
-  } else if (delta > 50) {
-    navigateGallery(-1);
+  const deltaX = touchEndX - touchStartX;
+  const deltaY = touchEndY - touchStartY;
+  
+  // Differentiate horizontal swiping from vertical scrolling
+  if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    if (deltaX < 0) {
+      navigateGallery(1);  // Swipe Left -> Next
+    } else {
+      navigateGallery(-1); // Swipe Right -> Previous
+    }
   }
 }
 
