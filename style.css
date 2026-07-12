@@ -2823,56 +2823,82 @@ body::before {
     min-height: 48px !important;
   }
   .hero-visual-container {
-    margin-top: 1rem !important;
-    height: 120px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 160px !important;
+    width: 100% !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0 !important;
+    overflow: visible !important;
   }
   .abstract-geometry {
-    width: 120px !important;
-    height: 120px !important;
+    width: 150px !important;
+    height: 150px !important;
+    position: relative !important;
+    margin: 0 auto !important;
   }
+  .geo-circle-1 { width: 140px !important; height: 140px !important; }
+  .geo-circle-2 { width: 90px !important; height: 90px !important; }
+  .geo-circle-3 { width: 45px !important; height: 45px !important; }
+  .geo-line-curved { width: 100px !important; height: 100px !important; }
+  .geo-line-axis { width: 170px !important; left: -10px !important; }
 
   /* Mobile Project Viewer Layout */
   .project-page-gallery-layout {
-    grid-template-columns: 1fr !important;
-    gap: 2rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
     margin-top: 1.5rem !important;
   }
 
   .gallery-main-area {
+    display: flex !important;
+    flex-direction: column !important;
     gap: 1rem !important;
+    width: 100% !important;
   }
 
-  /* Image Viewer aspect scaling */
+  /* Image Viewer aspect scaling - 100% CROP-FREE */
   .main-preview-container {
-    height: auto !important;
-    min-height: auto !important;
-    background: #0d0d0d !important;
-    display: block !important;
-    overflow: visible !important;
-  }
-  .main-preview-slide {
-    position: relative !important;
-    width: 100% !important;
-    height: auto !important;
+    height: 55vh !important;
+    min-height: 320px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
+    background: #0d0d0d !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: 1px solid var(--color-border) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .main-preview-slide {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    position: relative !important;
+    overflow: hidden !important;
   }
   .main-preview-img {
-    position: relative !important;
-    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
     height: auto !important;
-    max-height: 65vh !important;
     object-fit: contain !important;
     display: block !important;
   }
   .main-preview-img.incoming {
     position: absolute !important;
-    top: 0 !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, 0) scale(1.02) !important;
-    width: 100% !important;
-    height: 100% !important;
+    transform: translate(-50%, -50%) scale(1.02) !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
   }
 
   /* Image navigation buttons placement inside viewer */
@@ -2906,37 +2932,90 @@ body::before {
 
   /* Project Details formatting */
   .gallery-info-area {
-    padding: 1rem 0 !important; /* Use full width with zero container double padding */
+    padding: 1.5rem 0 !important;
     width: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    box-sizing: border-box !important;
   }
   .info-title {
     font-size: clamp(28px, 8vw, 34px) !important;
-    margin-bottom: 0.75rem !important;
+    margin-bottom: 0 !important;
     line-height: 1.2 !important;
   }
   .info-desc {
     font-size: clamp(16px, 4.5vw, 18px) !important;
     line-height: 1.55 !important;
-    margin-bottom: 1.75rem !important;
+    margin-bottom: 0 !important;
     color: var(--color-secondary) !important;
   }
 
-  /* Sibling full-width navigation stack */
+  /* Sibling full-width navigation stack - Unbreakable & Uncollapsible */
   .project-sibling-nav {
+    display: flex !important;
     flex-direction: column !important;
-    gap: 0.75rem !important;
+    gap: 0.85rem !important;
     width: 100% !important;
+    margin-top: 0.5rem !important;
+    padding-top: 1.5rem !important;
+    border-top: 1px solid var(--color-border) !important;
   }
   .sibling-nav-btn {
+    display: flex !important;
     width: 100% !important;
-    padding: 1.15rem !important;
-    justify-content: center !important;
-    text-align: center !important;
+    height: auto !important;
+    min-height: 54px !important;
+    padding: 1rem 1.25rem !important;
+    background: var(--color-card) !important;
+    border: 1px solid var(--color-border) !important;
     box-sizing: border-box !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+    margin: 0 !important;
+  }
+  .sibling-nav-btn .nav-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
   .sibling-nav-btn.next {
-    flex-direction: row-reverse !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
+  }
+  .sibling-nav-btn.next .nav-text {
+    align-items: flex-end !important;
+    text-align: right !important;
+  }
+  .sibling-nav-btn .nav-proj-title {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--color-primary) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .sibling-nav-btn .nav-label {
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    color: var(--color-text-light) !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 0.2em !important;
+  }
+
+  /* Video Previews dark background to prevent white placeholders */
+  .video-preview-container {
+    background-color: #0b0b0b !important;
+  }
+  .portfolio-video {
+    background-color: #0b0b0b !important;
   }
 }
 

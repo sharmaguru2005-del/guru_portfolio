@@ -347,6 +347,11 @@ function initActiveNavHighlight() {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const id = entry.target.getAttribute("id");
+        
+        // Verify if a menu item exists for this section before updating highlights
+        const hasLink = Array.from(navLinks).some(link => link.getAttribute("href") === `#${id}`);
+        if (!hasLink) return;
+
         navLinks.forEach((link) => {
           if (link.getAttribute("href") === `#${id}`) {
             link.classList.add("active");
@@ -670,17 +675,28 @@ function initVideosShowcase() {
 
     const videoObserver = new IntersectionObserver((entries, obs) => {
       entries.forEach(entry => {
+        const video = entry.target;
         if (entry.isIntersecting) {
-          const video = entry.target;
           if (video.getAttribute("preload") !== "auto") {
             video.setAttribute("preload", "auto");
           }
-          obs.unobserve(video);
+          // On mobile, autoplay the preview loop when it enters the viewport
+          if (window.matchMedia("(pointer: coarse)").matches) {
+            video.play().catch(() => {});
+          } else {
+            obs.unobserve(video); // Unobserve on desktop once preloaded
+          }
+        } else {
+          // On mobile, pause the preview loop when it leaves the viewport to save resource overhead
+          if (window.matchMedia("(pointer: coarse)").matches) {
+            video.pause();
+            video.currentTime = 0.1;
+          }
         }
       });
     }, { rootMargin: margin });
 
-    grid.querySelectorAll(".portfolio-video[preload='metadata']").forEach(video => {
+    grid.querySelectorAll(".portfolio-video").forEach(video => {
       videoObserver.observe(video);
     });
   }
