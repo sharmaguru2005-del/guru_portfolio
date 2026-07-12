@@ -3069,6 +3069,18 @@ body::before {
   .video-modal-spinner.active {
     display: flex !important;
   }
+  .video-modal-error {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    display: none;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    z-index: 10 !important;
+    width: 90% !important;
+  }
 }
 
 

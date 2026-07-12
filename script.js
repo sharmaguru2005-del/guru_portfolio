@@ -665,6 +665,8 @@ function initVideosShowcase() {
           v.style.opacity = "1";
           const placeholder = card.querySelector(".video-loading-placeholder");
           if (placeholder) placeholder.style.display = "none";
+          v.removeEventListener("playing", handleVideoReady);
+          v.removeEventListener("timeupdate", handleVideoReady);
         };
         v.addEventListener("playing", handleVideoReady, { once: true });
         v.addEventListener("timeupdate", handleVideoReady, { once: true });
@@ -1260,6 +1262,7 @@ function openVideoModal(videoSrc) {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
   const spinner = document.getElementById("videoModalSpinner");
+  const errorContainer = document.getElementById("videoModalError");
   if (!modal || !player) return;
 
   modal.classList.add("active");
@@ -1268,66 +1271,112 @@ function openVideoModal(videoSrc) {
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
   if (isMobile) {
-    // Mobile specific: show spinner, hide video initially
     if (spinner) spinner.classList.add("active");
+    if (errorContainer) errorContainer.style.display = "none";
     player.style.opacity = "0";
 
+    let stalledTimeout = null;
+    let hasFailed = false;
+
+    const showError = () => {
+      if (hasFailed) return;
+      hasFailed = true;
+      if (spinner) spinner.classList.remove("active");
+      if (errorContainer) errorContainer.style.display = "flex";
+      player.style.opacity = "0";
+      cleanup();
+    };
+
+    const startStalledTimeout = () => {
+      if (stalledTimeout) clearTimeout(stalledTimeout);
+      stalledTimeout = setTimeout(() => {
+        showError();
+      }, 6000);
+    };
+
+    const clearStalledTimeout = () => {
+      if (stalledTimeout) {
+        clearTimeout(stalledTimeout);
+        stalledTimeout = null;
+      }
+    };
+
     const startPlay = () => {
+      clearStalledTimeout();
       player.play()
         .then(() => {
           player.style.opacity = "1";
           if (spinner) spinner.classList.remove("active");
+          cleanup();
         })
         .catch((err) => {
-          console.warn("Autoplay blocked on mobile, waiting for tap to retry:", err);
+          console.warn("Autoplay blocked on mobile, waiting for tap:", err);
           const retryPlay = () => {
             player.play().then(() => {
               player.style.opacity = "1";
               if (spinner) spinner.classList.remove("active");
               document.removeEventListener("touchstart", retryPlay);
               document.removeEventListener("click", retryPlay);
+            }).catch(() => {
+              showError();
             });
           };
           document.addEventListener("touchstart", retryPlay, { passive: true });
           document.addEventListener("click", retryPlay, { passive: true });
         });
-      cleanup();
     };
 
-    const handleError = () => {
-      console.warn("Mobile video loading failed, retrying once...");
-      player.load();
-      player.play()
-        .then(() => {
-          player.style.opacity = "1";
-          if (spinner) spinner.classList.remove("active");
-        })
-        .catch(() => {
-          player.style.opacity = "1";
-          if (spinner) spinner.classList.remove("active");
-        });
-      cleanup();
+    const handleCanPlay = () => {
+      startPlay();
+    };
+
+    const handlePlaying = () => {
+      clearStalledTimeout();
+      player.style.opacity = "1";
+      if (spinner) spinner.classList.remove("active");
+    };
+
+    const handleWaiting = () => {
+      startStalledTimeout();
+    };
+
+    const handleStalled = () => {
+      startStalledTimeout();
+    };
+
+    const handleTerminalError = () => {
+      showError();
     };
 
     const cleanup = () => {
-      player.removeEventListener("canplay", startPlay);
-      player.removeEventListener("error", handleError);
+      clearStalledTimeout();
+      player.removeEventListener("canplay", handleCanPlay);
+      player.removeEventListener("playing", handlePlaying);
+      player.removeEventListener("waiting", handleWaiting);
+      player.removeEventListener("stalled", handleStalled);
+      player.removeEventListener("error", handleTerminalError);
+      player.removeEventListener("abort", handleTerminalError);
     };
 
-    player.addEventListener("canplay", startPlay);
-    player.addEventListener("error", handleError);
+    player.addEventListener("canplay", handleCanPlay);
+    player.addEventListener("playing", handlePlaying);
+    player.addEventListener("waiting", handleWaiting);
+    player.addEventListener("stalled", handleStalled);
+    player.addEventListener("error", handleTerminalError);
+    player.addEventListener("abort", handleTerminalError);
 
     player.src = videoSrc;
-    player.muted = false; // Allow sound on mobile modal
+    player.muted = false;
     player.loop = true;
-    player.load(); // Call video.load() before play()
+    player.load();
   } else {
     // Desktop: keep the exact same original behaviour!
+    if (spinner) spinner.classList.remove("active");
+    if (errorContainer) errorContainer.style.display = "none";
+    player.style.opacity = "1";
     player.src = videoSrc;
     player.muted = true;
     player.loop = true;
-    player.style.opacity = "1";
-    if (spinner) spinner.classList.remove("active");
     player.play().catch(() => {});
   }
 }
@@ -1336,11 +1385,10 @@ function closeVideoModal() {
   const modal = document.getElementById("videoModal");
   const player = document.getElementById("videoModalPlayer");
   const spinner = document.getElementById("videoModalSpinner");
+  const errorContainer = document.getElementById("videoModalError");
   if (!modal || !player) return;
 
   player.pause();
-  
-  // Release decoder resources on close
   player.removeAttribute("src");
   player.load();
   
@@ -1348,6 +1396,7 @@ function closeVideoModal() {
   document.body.classList.remove("lock-scroll");
   
   if (spinner) spinner.classList.remove("active");
+  if (errorContainer) errorContainer.style.display = "none";
   player.style.opacity = "0";
 }
 
