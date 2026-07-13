@@ -620,7 +620,7 @@ function initVideosShowcase() {
         // Desktop: render lazy-loaded thumbnail and preview video (which only loads/plays on hover)
         videoHtml = `
           <img class="video-thumbnail" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E" data-src="${thumbPath}" onerror="this.onerror=null; this.src='./Design%20Creatives/RYDR/thumbnails/rydr.jpg';" alt="${video.title} thumbnail" />
-          <video class="portfolio-video" src="${video.filePath}" preload="none" muted loop playsinline></video>
+          <video class="portfolio-video" src="${video.filePath}" preload="metadata" muted loop playsinline></video>
         `;
       }
     }
@@ -628,6 +628,7 @@ function initVideosShowcase() {
     card.innerHTML = `
       <div class="video-preview-container">
         ${videoHtml}
+        ${!video.locked ? '<div class="play-button-overlay"></div>' : ''}
       </div>
       <div class="video-info">
         <div class="project-accent-line"></div>
@@ -665,44 +666,25 @@ function initVideosShowcase() {
           isHovered = true;
           const v = card.querySelector(".portfolio-video");
           if (v) {
-            const triggerPlay = () => {
-              if (!isHovered) return;
-              
-              if ('requestVideoFrameCallback' in v) {
-                v.requestVideoFrameCallback(() => {
-                  if (isHovered) {
-                    card.classList.add("video-playing");
-                  }
-                });
-              } else {
-                const onPlaying = () => {
-                  if (isHovered) {
-                    card.classList.add("video-playing");
-                  }
-                  v.removeEventListener("playing", onPlaying);
-                };
-                v.addEventListener("playing", onPlaying);
-              }
-
-              v.play().catch((err) => {
-                console.warn("Play failed:", err);
+            if ('requestVideoFrameCallback' in v) {
+              v.requestVideoFrameCallback(() => {
+                if (isHovered) {
+                  card.classList.add("video-playing");
+                }
               });
-            };
-
-            if (v.readyState >= 2) {
-              triggerPlay();
             } else {
-              v.setAttribute("preload", "auto");
-              v.load();
-
-              const onCanPlay = () => {
-                v.removeEventListener("canplay", onCanPlay);
-                v.removeEventListener("loadeddata", onCanPlay);
-                triggerPlay();
+              const onPlaying = () => {
+                if (isHovered) {
+                  card.classList.add("video-playing");
+                }
+                v.removeEventListener("playing", onPlaying);
               };
-              v.addEventListener("canplay", onCanPlay);
-              v.addEventListener("loadeddata", onCanPlay);
+              v.addEventListener("playing", onPlaying);
             }
+
+            v.play().catch((err) => {
+              console.warn("Play failed:", err);
+            });
           }
         }, { passive: true });
 
@@ -1265,24 +1247,17 @@ function openVideoModal(videoSrc) {
   const player = document.getElementById("videoModalPlayer");
   if (!modal || !player) return;
 
-  // Make sure controls are shown and setup basic attributes
+  // Open modal immediately
+  modal.classList.add("active");
+  document.body.classList.add("lock-scroll");
+
   player.controls = true;
-  player.muted = true;
-  player.loop = true;
   player.playsInline = true;
 
   // Resolve to absolute URL to ensure cross-origin/CORS stability
   const absoluteSrc = new URL(videoSrc, window.location.href).href;
   console.log(`[Video Playback] Target Source: ${absoluteSrc}`);
-  player.src = absoluteSrc;
 
-  modal.classList.add("active");
-  document.body.classList.add("lock-scroll");
-
-  console.log("[Video Playback] Calling load()...");
-  player.load();
-
-  // Playback trigger helper
   const playVideo = () => {
     console.log("[Video Playback] Attempting play()...");
     player.play()
@@ -1291,19 +1266,26 @@ function openVideoModal(videoSrc) {
       })
       .catch((err) => {
         console.warn("[Video Playback] play() rejected:", err);
-        // Autoplay/playback blocked. The controls are visible, allowing user to manually start it.
       });
   };
 
-  // Wait for metadata / capability to play
-  const onReady = () => {
-    player.removeEventListener("loadedmetadata", onReady);
-    player.removeEventListener("canplay", onReady);
+  // Reuse the existing source if it matches to play instantly
+  if (player.src === absoluteSrc) {
+    console.log("[Video Playback] Reusing existing loaded source.");
     playVideo();
-  };
+  } else {
+    player.src = absoluteSrc;
+    player.load();
 
-  player.addEventListener("loadedmetadata", onReady);
-  player.addEventListener("canplay", onReady);
+    const onReady = () => {
+      player.removeEventListener("loadedmetadata", onReady);
+      player.removeEventListener("canplay", onReady);
+      playVideo();
+    };
+
+    player.addEventListener("loadedmetadata", onReady);
+    player.addEventListener("canplay", onReady);
+  }
 }
 
 function closeVideoModal() {
@@ -1311,10 +1293,9 @@ function closeVideoModal() {
   const player = document.getElementById("videoModalPlayer");
   if (!modal || !player) return;
 
-  console.log("[Video Playback] Closing modal, pausing and resetting player source...");
+  console.log("[Video Playback] Closing modal and pausing player...");
   player.pause();
-  player.src = "";
-  player.load(); // Clean up native resources on mobile
+  // Do NOT clear player.src or call load() to preserve video cache for instant repeat views!
 
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
