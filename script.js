@@ -118,10 +118,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fullscreen Video Player modal event bindings
   const videoModal = document.getElementById("videoModal");
   const videoModalClose = document.getElementById("videoModalClose");
+  const videoModalPlayer = document.getElementById("videoModalPlayer");
   if (videoModal && videoModalClose) {
     videoModalClose.addEventListener("click", closeVideoModal);
     videoModal.addEventListener("click", (e) => {
       if (e.target === videoModal) closeVideoModal();
+    });
+  }
+
+  if (videoModalPlayer) {
+    const debugEvents = ["loadedmetadata", "loadeddata", "canplay", "canplaythrough", "play", "playing", "pause", "waiting", "stalled", "error"];
+    debugEvents.forEach(evtName => {
+      videoModalPlayer.addEventListener(evtName, (e) => {
+        if (evtName === "error") {
+          console.warn(`[Video Event] ${evtName}:`, videoModalPlayer.error ? videoModalPlayer.error.code : "unknown error");
+        } else {
+          console.log(`[Video Event] ${evtName}`);
+        }
+      });
     });
   }
 
@@ -574,34 +588,46 @@ function initVideosShowcase() {
     return (a.locked === b.locked) ? 0 : a.locked ? 1 : -1;
   });
 
-  let unlockedVideoIndex = 0;
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
   PORTFOLIO_VIDEOS.forEach((video) => {
     const card = document.createElement("div");
     card.className = `video-card reveal-fade-up ${video.isHorizontal ? 'horizontal-video' : 'vertical-video'}`;
     card.style.setProperty("--project-hover-accent", "var(--theme-skincare)");
     card.setAttribute("tabindex", "0");
 
-    let preloadAttr = "metadata";
-    if (!video.locked) {
-      if (unlockedVideoIndex === 0) {
-        preloadAttr = "auto";
+    let videoHtml = "";
+    const thumbPath = getThumbnailPath(video.filePath);
+
+    if (video.locked) {
+      videoHtml = `
+        <div class="thumbnail-wrapper">
+          <img class="video-thumbnail blurred" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E" data-src="${thumbPath}" onerror="this.onerror=null; this.src='./Design%20Creatives/RYDR/thumbnails/rydr.jpg';" alt="${video.title} thumbnail" />
+          <div class="lock-overlay">
+            <span class="lock-icon">🔒</span>
+            <span class="lock-title">Locked Showcase</span>
+            <span class="lock-subtitle">Enter the access password or contact Gurunarayan to unlock.</span>
+          </div>
+        </div>
+      `;
+    } else {
+      if (isMobile) {
+        // Mobile: render static lazy-loaded thumbnail only, no video element to prevent decoder starvation
+        videoHtml = `
+          <img class="video-thumbnail" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E" data-src="${thumbPath}" onerror="this.onerror=null; this.src='./Design%20Creatives/RYDR/thumbnails/rydr.jpg';" alt="${video.title} thumbnail" />
+        `;
+      } else {
+        // Desktop: render lazy-loaded thumbnail and preview video (which only loads/plays on hover)
+        videoHtml = `
+          <img class="video-thumbnail" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3C/svg%3E" data-src="${thumbPath}" onerror="this.onerror=null; this.src='./Design%20Creatives/RYDR/thumbnails/rydr.jpg';" alt="${video.title} thumbnail" />
+          <video class="portfolio-video" src="${video.filePath}" preload="none" muted loop playsinline></video>
+        `;
       }
-      unlockedVideoIndex++;
     }
 
     card.innerHTML = `
       <div class="video-preview-container">
-        ${video.locked ? `
-          <div class="thumbnail-wrapper">
-            <div class="lock-overlay">
-              <span class="lock-icon">🔒</span>
-              <span class="lock-title">Locked Showcase</span>
-              <span class="lock-subtitle">Enter the access password or contact Gurunarayan to unlock.</span>
-            </div>
-          </div>
-        ` : `
-          <video class="portfolio-video" src="${video.filePath}" preload="${preloadAttr}" muted loop playsinline></video>
-        `}
+        ${videoHtml}
       </div>
       <div class="video-info">
         <div class="project-accent-line"></div>
@@ -631,17 +657,62 @@ function initVideosShowcase() {
       });
       card.style.cursor = "pointer";
 
-      // Hover controls for desktop preview Loops (only for pointer: fine devices)
-      if (window.matchMedia("(pointer: fine)").matches) {
+      // Hover controls for desktop preview loops (only for pointer: fine devices)
+      if (!isMobile && window.matchMedia("(pointer: fine)").matches) {
+        let isHovered = false;
+
         card.addEventListener("mouseenter", () => {
+          isHovered = true;
           const v = card.querySelector(".portfolio-video");
-          if (v) v.play().catch(() => {});
+          if (v) {
+            const triggerPlay = () => {
+              if (!isHovered) return;
+              
+              if ('requestVideoFrameCallback' in v) {
+                v.requestVideoFrameCallback(() => {
+                  if (isHovered) {
+                    card.classList.add("video-playing");
+                  }
+                });
+              } else {
+                const onPlaying = () => {
+                  if (isHovered) {
+                    card.classList.add("video-playing");
+                  }
+                  v.removeEventListener("playing", onPlaying);
+                };
+                v.addEventListener("playing", onPlaying);
+              }
+
+              v.play().catch((err) => {
+                console.warn("Play failed:", err);
+              });
+            };
+
+            if (v.readyState >= 2) {
+              triggerPlay();
+            } else {
+              v.setAttribute("preload", "auto");
+              v.load();
+
+              const onCanPlay = () => {
+                v.removeEventListener("canplay", onCanPlay);
+                v.removeEventListener("loadeddata", onCanPlay);
+                triggerPlay();
+              };
+              v.addEventListener("canplay", onCanPlay);
+              v.addEventListener("loadeddata", onCanPlay);
+            }
+          }
         }, { passive: true });
+
         card.addEventListener("mouseleave", () => {
+          isHovered = false;
+          card.classList.remove("video-playing");
           const v = card.querySelector(".portfolio-video");
           if (v) {
             v.pause();
-            v.currentTime = 0.1;
+            v.currentTime = 0.05;
           }
         }, { passive: true });
       }
@@ -649,46 +720,10 @@ function initVideosShowcase() {
 
     grid.appendChild(card);
     observeElementForReveal(card);
-
-    // Skip black first frame by seeking to 0.1s once metadata loads
-    const v = card.querySelector(".portfolio-video");
-    if (v) {
-      v.addEventListener("loadedmetadata", () => {
-        v.currentTime = 0.1;
-      }, { once: true, passive: true });
-      if (v.readyState >= 1) {
-        v.currentTime = 0.1;
-      }
-    }
   });
 
-  // Dynamic video buffering upgrade when approaching the viewport (Adaptive rootMargin)
-  if ("IntersectionObserver" in window) {
-    let margin = "300px";
-    if (navigator.connection) {
-      const conn = navigator.connection;
-      const isSlow = conn.saveData || /^(2g|3g)/.test(conn.effectiveType || '');
-      if (isSlow) {
-        margin = "100px"; // Delay buffering until closer on slow connections
-      }
-    }
-
-    const videoObserver = new IntersectionObserver((entries, obs) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const video = entry.target;
-          if (video.getAttribute("preload") !== "auto") {
-            video.setAttribute("preload", "auto");
-          }
-          obs.unobserve(video);
-        }
-      });
-    }, { rootMargin: margin });
-
-    grid.querySelectorAll(".portfolio-video[preload='metadata']").forEach(video => {
-      videoObserver.observe(video);
-    });
-  }
+  // Lazy load the video thumbnails immediately after appending the cards
+  lazyLoadProjectImages();
 }
 
 
@@ -1230,12 +1265,45 @@ function openVideoModal(videoSrc) {
   const player = document.getElementById("videoModalPlayer");
   if (!modal || !player) return;
 
-  player.src = videoSrc;
+  // Make sure controls are shown and setup basic attributes
+  player.controls = true;
   player.muted = true;
   player.loop = true;
+  player.playsInline = true;
+
+  // Resolve to absolute URL to ensure cross-origin/CORS stability
+  const absoluteSrc = new URL(videoSrc, window.location.href).href;
+  console.log(`[Video Playback] Target Source: ${absoluteSrc}`);
+  player.src = absoluteSrc;
+
   modal.classList.add("active");
   document.body.classList.add("lock-scroll");
-  player.play().catch(() => {});
+
+  console.log("[Video Playback] Calling load()...");
+  player.load();
+
+  // Playback trigger helper
+  const playVideo = () => {
+    console.log("[Video Playback] Attempting play()...");
+    player.play()
+      .then(() => {
+        console.log("[Video Playback] play() resolved successfully");
+      })
+      .catch((err) => {
+        console.warn("[Video Playback] play() rejected:", err);
+        // Autoplay/playback blocked. The controls are visible, allowing user to manually start it.
+      });
+  };
+
+  // Wait for metadata / capability to play
+  const onReady = () => {
+    player.removeEventListener("loadedmetadata", onReady);
+    player.removeEventListener("canplay", onReady);
+    playVideo();
+  };
+
+  player.addEventListener("loadedmetadata", onReady);
+  player.addEventListener("canplay", onReady);
 }
 
 function closeVideoModal() {
@@ -1243,8 +1311,11 @@ function closeVideoModal() {
   const player = document.getElementById("videoModalPlayer");
   if (!modal || !player) return;
 
+  console.log("[Video Playback] Closing modal, pausing and resetting player source...");
   player.pause();
   player.src = "";
+  player.load(); // Clean up native resources on mobile
+
   modal.classList.remove("active");
   document.body.classList.remove("lock-scroll");
 }
@@ -1285,7 +1356,7 @@ function lazyLoadProjectImages() {
     });
   }, { rootMargin: "400px" });
 
-  document.querySelectorAll(".project-img[data-src]").forEach((img) => {
+  document.querySelectorAll(".project-img[data-src], .video-thumbnail[data-src]").forEach((img) => {
     observer.observe(img);
   });
 }
@@ -1296,6 +1367,7 @@ function lazyLoadProjectImages() {
 function getThumbnailPath(filePath) {
   if (!filePath) return "";
   const decoded = decodeURIComponent(filePath);
+  
   if (decoded.toLowerCase().includes("thumbnail") || decoded.toLowerCase().includes("thumabnail")) {
     return filePath;
   }
