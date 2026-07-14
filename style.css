@@ -216,6 +216,7 @@ a {
   height: 92px;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center 10%;
   opacity: 0;
   transform: scale(0.9);
   animation: revealAvatar 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
