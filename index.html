@@ -43,9 +43,25 @@
 
   <!-- Loading Overlay -->
   <div id="loader" class="loader">
-    <div class="loader-logo">GURUNARAYAN SHARMA</div>
-    <div class="loader-bar">
-      <div class="loader-bar-progress"></div>
+    <div class="loader-vignette"></div>
+    <div class="loader-noise"></div>
+    <div class="loader-spotlight"></div>
+    
+    <div class="loader-content">
+      <div class="loader-avatar-container">
+        <!-- SVG circle outline for premium stroke animation -->
+        <svg class="loader-svg-circle" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" />
+        </svg>
+        <img class="loader-avatar" src="My Image Logo.jpeg" alt="Gurunarayan Sharma" />
+      </div>
+      
+      <div class="loader-brand-title" id="loaderBrandTitle">
+        <!-- Letters will be injected dynamically via JS for staggered animation -->
+      </div>
+      
+      <div class="loader-divider"></div>
+      <div class="loader-brand-subtitle">Graphic Designer &amp; Generative AI Creator</div>
     </div>
   </div>
 

@@ -106,7 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initLoader();
   initCustomCursor();
-  initRevealAnimations();
   initSubtleParallax();
   initActiveNavHighlight();
   initPortfolioMaster();
@@ -189,16 +188,144 @@ document.addEventListener("DOMContentLoaded", () => {
    ----------------------------------------------- */
 function initLoader() {
   const loader = document.getElementById("loader");
-  if (loader) {
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        loader.classList.add("loaded");
-      }, 600);
-    });
-    setTimeout(() => {
-      loader.classList.add("loaded");
-    }, 2500); // safety fallback
+  const navAvatar = document.querySelector(".nav-avatar");
+
+  // Keep navAvatar hidden initially to support the FLIP transition smoothly
+  if (navAvatar) {
+    navAvatar.style.opacity = "0";
+    navAvatar.style.transition = "opacity 0.4s ease";
   }
+
+  if (!loader) {
+    initRevealAnimations();
+    if (navAvatar) navAvatar.style.opacity = "1";
+    return;
+  }
+
+  // Split title text for staggered character reveal
+  const brandTitle = document.getElementById("loaderBrandTitle");
+  if (brandTitle) {
+    const text = "GURUNARAYAN SHARMA";
+    brandTitle.innerHTML = text.split("").map((char, index) => {
+      if (char === " ") return `<span class="space">&nbsp;</span>`;
+      return `<span class="letter" style="animation-delay: ${100 + index * 30}ms">${char}</span>`;
+    }).join("");
+  }
+
+  const startTime = Date.now();
+  const minDuration = 1600; // 1.6s cinematic intro
+  const maxDuration = 2000; // 2.0s safety gate
+  let loaderHidden = false;
+
+  const hideLoader = () => {
+    if (loaderHidden) return;
+    loaderHidden = true;
+
+    const loaderAvatar = loader.querySelector(".loader-avatar");
+    if (!loaderAvatar || !navAvatar) {
+      // Fallback: fade out standard loader if elements are missing
+      loader.classList.add("loaded");
+      initRevealAnimations();
+      if (navAvatar) navAvatar.style.opacity = "1";
+      setTimeout(() => loader.remove(), 1000);
+      return;
+    }
+
+    // Step 1: Fade out texts, divider and SVG circle inside the loader overlay
+    const title = loader.querySelector(".loader-brand-title");
+    const divider = loader.querySelector(".loader-divider");
+    const subtitle = loader.querySelector(".loader-brand-subtitle");
+    const svgCircle = loader.querySelector(".loader-svg-circle");
+
+    const textTransition = "opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)";
+    if (title) title.style.transition = textTransition;
+    if (divider) divider.style.transition = textTransition;
+    if (subtitle) subtitle.style.transition = textTransition;
+    if (svgCircle) svgCircle.style.transition = "opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1)";
+
+    if (title) { title.style.opacity = "0"; title.style.transform = "translateY(-10px)"; }
+    if (divider) { divider.style.opacity = "0"; divider.style.transform = "scaleX(0)"; }
+    if (subtitle) { subtitle.style.opacity = "0"; subtitle.style.transform = "translateY(5px)"; }
+    if (svgCircle) svgCircle.style.opacity = "0";
+
+    // Step 2: Measure FLIP positions
+    const firstRect = loaderAvatar.getBoundingClientRect();
+    const lastRect = navAvatar.getBoundingClientRect();
+
+    // Calculate center coordinates
+    const firstCenterX = firstRect.left + firstRect.width / 2;
+    const firstCenterY = firstRect.top + firstRect.height / 2;
+    const lastCenterX = lastRect.left + lastRect.width / 2;
+    const lastCenterY = lastRect.top + lastRect.height / 2;
+
+    // Calculate invert transform values
+    const invertX = firstCenterX - lastCenterX;
+    const invertY = firstCenterY - lastCenterY;
+    const invertScale = firstRect.width / lastRect.width;
+
+    // Hide original static loader avatar
+    loaderAvatar.style.opacity = "0";
+
+    // Step 3: Create temporary absolute transitioning element positioned exactly at the destination layout
+    const flipImg = document.createElement("img");
+    flipImg.src = loaderAvatar.src;
+    flipImg.className = "loader-avatar-flip";
+    flipImg.style.position = "fixed";
+    flipImg.style.zIndex = "10000";
+    flipImg.style.borderRadius = "50%";
+    flipImg.style.objectFit = "cover";
+    flipImg.style.pointerEvents = "none";
+    flipImg.style.width = `${lastRect.width}px`;
+    flipImg.style.height = `${lastRect.height}px`;
+    flipImg.style.top = `${lastRect.top}px`;
+    flipImg.style.left = `${lastRect.left}px`;
+    flipImg.style.transformOrigin = "center center";
+    flipImg.style.willChange = "transform, opacity";
+    
+    // Position the element at the inverted (start) coordinates initially
+    flipImg.style.transform = `translate3d(${invertX}px, ${invertY}px, 0) scale(${invertScale})`;
+    document.body.appendChild(flipImg);
+
+    // Force a layout reflow to guarantee the browser registers the starting frame style
+    flipImg.offsetWidth;
+
+    // Trigger transform and delayed opacity transitions in a single unified thread
+    flipImg.style.transition = "transform 1000ms cubic-bezier(0.16, 1, 0.3, 1), opacity 120ms cubic-bezier(0.16, 1, 0.3, 1) 880ms";
+    flipImg.style.transform = "translate3d(0px, 0px, 0px) scale(1)";
+    flipImg.style.opacity = "0";
+
+    // Smoothly fade in the real navbar image with a delay matching the last 120ms of the animation
+    navAvatar.style.transition = "opacity 120ms cubic-bezier(0.16, 1, 0.3, 1) 880ms";
+    navAvatar.style.opacity = "1";
+
+    // Fade out loader background overlay
+    loader.style.transition = "opacity 1000ms cubic-bezier(0.16, 1, 0.3, 1)";
+    loader.style.opacity = "0";
+
+    // Step 5: Simultaneously trigger hero typography reveal at 200ms
+    setTimeout(() => {
+      initRevealAnimations();
+    }, 200);
+
+    // Step 6: Complete transition & cleanup at 1050ms
+    setTimeout(() => {
+      flipImg.remove();
+      loader.remove();
+    }, 1050);
+  };
+
+  // Hide after minimum duration once page is fully loaded
+  window.addEventListener("load", () => {
+    const elapsed = Date.now() - startTime;
+    if (elapsed >= minDuration) {
+      hideLoader();
+    } else {
+      setTimeout(hideLoader, minDuration - elapsed);
+    }
+  });
+
+  // Safety fallback / maximum duration gate
+  setTimeout(hideLoader, maxDuration);
 }
 
 /* -----------------------------------------------
@@ -352,6 +479,8 @@ function initSubtleParallax() {
     }
   }, { passive: true });
 }
+
+
 
 function initActiveNavHighlight() {
   const sections = document.querySelectorAll("section");
